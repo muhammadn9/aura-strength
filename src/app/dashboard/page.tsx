@@ -97,17 +97,17 @@ export default async function DashboardPage() {
                 <h2 className="text-xl font-bold text-white mb-4">Quick Start</h2>
                 <div className="space-y-3">
                   <Link
-                    href="/profile/setup"
-                    className="block w-full px-4 py-3 bg-linear-to-r from-purple-500 to-indigo-500 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-indigo-600 transition-all text-center"
+                    href="/workout/new"
+                    className="block w-full px-6 py-4 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold rounded-xl hover:from-purple-600 hover:to-indigo-600 transition-all text-center shadow-lg shadow-purple-500/50 hover:shadow-xl hover:shadow-purple-500/50 hover:scale-105"
                   >
-                    Complete Profile Setup
+                    🤖 Generate AI Workout
                   </Link>
-                  <button
-                    disabled
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 text-slate-400 font-semibold rounded-lg opacity-50 cursor-not-allowed"
+                  <Link
+                    href="/profile/setup"
+                    className="block w-full px-4 py-3 bg-white/5 border border-white/10 text-slate-300 font-semibold rounded-lg hover:bg-white/10 hover:border-purple-500/50 transition-all text-center"
                   >
-                    Start Workout (Complete profile first)
-                  </button>
+                    Update Profile
+                  </Link>
                 </div>
               </GlassCard>
 
