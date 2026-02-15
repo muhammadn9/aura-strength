@@ -20,23 +20,23 @@ export default async function DashboardPage() {
   return (
     <>
       <AuraBackground />
-      <div className="min-h-screen p-4 md:p-8">
-        <div className="max-w-7xl mx-auto space-y-8">
+      <div className="min-h-screen p-3 sm:p-4 md:p-8">
+        <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
           {/* Header */}
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-white">
-                Welcome back, <span className="bg-linear-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">{userName}</span>
+          <div className="flex justify-between items-start gap-3">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white break-words">
+                Welcome back, <span className="bg-linear-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent break-words">{userName}</span>
               </h1>
-              <p className="text-slate-400 mt-1">Ready to build your aura?</p>
+              <p className="text-slate-400 mt-1 text-sm md:text-base">Ready to build your aura?</p>
             </div>
             <form action="/auth/signout" method="post">
               <button
                 type="submit"
-                className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-slate-300 hover:bg-white/10 transition-all"
+                className="flex items-center gap-2 px-3 md:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-slate-300 hover:bg-white/10 transition-all flex-shrink-0"
               >
                 <LogOut className="w-4 h-4" />
-                Sign Out
+                <span className="hidden sm:inline text-sm">Sign Out</span>
               </button>
             </form>
           </div>

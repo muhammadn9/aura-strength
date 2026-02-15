@@ -71,22 +71,22 @@ export function AISessionGenerator() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 py-12 px-4">
-      <div className="max-w-6xl mx-auto space-y-8">
+    <div className="min-h-screen bg-slate-950 py-8 md:py-12 px-3 sm:px-4">
+      <div className="max-w-6xl mx-auto space-y-6 md:space-y-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center space-y-4"
+          className="text-center space-y-3 md:space-y-4"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/20">
-            <Sparkles className="w-4 h-4 text-purple-400" />
-            <span className="text-sm text-purple-300 font-medium">AI Coach</span>
+          <div className="inline-flex items-center gap-2 px-3 md:px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/20">
+            <Sparkles className="w-3 h-3 md:w-4 md:h-4 text-purple-400" />
+            <span className="text-xs md:text-sm text-purple-300 font-medium">AI Coach</span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent px-4">
             Generate Your Workout
           </h1>
-          <p className="text-slate-400 max-w-2xl mx-auto">
+          <p className="text-sm md:text-base text-slate-400 max-w-2xl mx-auto px-4">
             Powered by Google Gemini AI. Your personal strength coach that adapts to your
             progress and maximizes every rep.
           </p>
@@ -114,13 +114,13 @@ export function AISessionGenerator() {
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex justify-center"
+                  className="flex justify-center px-4"
                 >
                   <button
                     onClick={handleGenerate}
                     disabled={state !== 'idle'}
                     className={cn(
-                      'group relative px-8 py-4 rounded-xl font-semibold text-lg',
+                      'group relative w-full sm:w-auto px-6 md:px-8 py-3 md:py-4 rounded-xl font-semibold text-base md:text-lg',
                       'bg-gradient-to-r from-purple-500 to-indigo-500',
                       'hover:from-purple-600 hover:to-indigo-600',
                       'text-white shadow-lg shadow-purple-500/50',
@@ -129,9 +129,9 @@ export function AISessionGenerator() {
                       'hover:scale-105 hover:shadow-xl hover:shadow-purple-500/50'
                     )}
                   >
-                    <span className="flex items-center gap-2">
-                      Generate Workout
-                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="truncate">Generate Workout</span>
+                      <ArrowRight className="w-4 h-4 md:w-5 md:h-5 group-hover:translate-x-1 transition-transform flex-shrink-0" />
                     </span>
                   </button>
                 </motion.div>
@@ -164,9 +164,9 @@ export function AISessionGenerator() {
               </motion.div>
 
               {/* Loading text */}
-              <div className="text-center space-y-2">
-                <h3 className="text-2xl font-bold text-white">Generating Your Workout...</h3>
-                <p className="text-slate-400">
+              <div className="text-center space-y-2 px-4">
+                <h3 className="text-xl md:text-2xl font-bold text-white">Generating Your Workout...</h3>
+                <p className="text-sm md:text-base text-slate-400">
                   The AI coach is analyzing your history and creating the perfect session
                 </p>
               </div>
@@ -201,15 +201,15 @@ export function AISessionGenerator() {
               className="space-y-6"
             >
               {/* Success header */}
-              <div className="bg-gradient-to-r from-purple-500/10 to-indigo-500/10 rounded-xl p-6 border border-purple-500/20">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center flex-shrink-0">
-                    <CheckCircle className="w-6 h-6 text-white" />
+              <div className="bg-gradient-to-r from-purple-500/10 to-indigo-500/10 rounded-xl p-4 md:p-6 border border-purple-500/20">
+                <div className="flex items-start gap-3 md:gap-4">
+                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center flex-shrink-0">
+                    <CheckCircle className="w-5 h-5 md:w-6 md:h-6 text-white" />
                   </div>
-                  <div className="flex-1">
-                    <h2 className="text-2xl font-bold text-white mb-2">{workout.workoutType}</h2>
-                    <p className="text-slate-300 mb-4">{workout.summary}</p>
-                    <div className="flex flex-wrap gap-4 text-sm">
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-xl md:text-2xl font-bold text-white mb-2 break-words">{workout.workoutType}</h2>
+                    <p className="text-sm md:text-base text-slate-300 mb-3 md:mb-4">{workout.summary}</p>
+                    <div className="flex flex-wrap gap-3 md:gap-4 text-xs md:text-sm">
                       <div className="text-slate-400">
                         <span className="text-purple-400 font-semibold">
                           {workout.exercises.length}
@@ -243,14 +243,14 @@ export function AISessionGenerator() {
               </div>
 
               {/* Actions */}
-              <div className="flex flex-wrap gap-4 justify-center">
+              <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center px-4">
                 <button
                   onClick={handleReset}
-                  className="px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-purple-500/50 transition-all"
+                  className="px-5 md:px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-purple-500/50 transition-all text-sm md:text-base"
                 >
                   Generate Another
                 </button>
-                <button className="px-6 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-semibold hover:from-purple-600 hover:to-indigo-600 transition-all">
+                <button className="px-5 md:px-6 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-semibold hover:from-purple-600 hover:to-indigo-600 transition-all text-sm md:text-base">
                   Start Workout
                 </button>
               </div>
@@ -271,15 +271,15 @@ export function AISessionGenerator() {
               </div>
 
               {/* Error message */}
-              <div className="text-center space-y-2 max-w-md">
-                <h3 className="text-2xl font-bold text-white">Generation Failed</h3>
-                <p className="text-slate-400">{error || 'Something went wrong'}</p>
+              <div className="text-center space-y-2 max-w-md px-4">
+                <h3 className="text-xl md:text-2xl font-bold text-white">Generation Failed</h3>
+                <p className="text-sm md:text-base text-slate-400 break-words">{error || 'Something went wrong'}</p>
               </div>
 
               {/* Retry button */}
               <button
                 onClick={handleReset}
-                className="px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-purple-500/50 transition-all"
+                className="px-5 md:px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-purple-500/50 transition-all text-sm md:text-base"
               >
                 Try Again
               </button>
