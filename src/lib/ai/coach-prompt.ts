@@ -353,11 +353,13 @@ export function analyzePerformance(
       readyForProgression: false,
       recommendation: {
         exerciseName,
+        action: 'maintain',
         recommendedWeight: 0,
-        recommendedReps: 0,
+        recommendedReps: '0',
+        recommendedRIR: '2-3',
         reasoning: 'No previous data available',
-        confidence: 'low'
-      }
+        confidence: 'low',
+      },
     };
   }
 
@@ -418,11 +420,13 @@ export function analyzePerformance(
     readyForProgression,
     recommendation: {
       exerciseName,
+      action: readyForProgression ? 'increase_weight' : 'maintain',
       recommendedWeight: Math.round(recommendedWeight * 2) / 2, // Round to nearest 0.5kg
-      recommendedReps,
+      recommendedReps: String(recommendedReps),
+      recommendedRIR: '1-2',
       reasoning,
-      confidence
-    }
+      confidence,
+    },
   };
 }
 

@@ -119,14 +119,47 @@ export interface AIExercise {
 // ============================================================================
 
 /**
+ * Type of progression action
+ */
+export type ProgressionAction = 'increase_weight' | 'increase_reps' | 'maintain' | 'deload';
+
+/**
+ * Confidence level for progression recommendation
+ */
+export type ProgressionConfidence = 'high' | 'medium' | 'low';
+
+/**
  * Recommendation for progressing an exercise
  */
 export interface ProgressionRecommendation {
   exerciseName: string;
-  recommendedWeight: number;
-  recommendedReps: number;
+  action: ProgressionAction;
+  recommendedWeight?: number;
+  recommendedReps: string;
+  recommendedRIR: string;
   reasoning: string;
-  confidence: 'high' | 'medium' | 'low';
+  confidence: ProgressionConfidence;
+  previousWeight?: number;
+  weightChange?: number;
+}
+
+/**
+ * Exercise performance from previous workout
+ */
+export interface ExercisePerformance {
+  exerciseName: string;
+  date: string;
+  sets: Array<{
+    weight: number;
+    reps: number;
+    rir: number;
+  }>;
+  averageRIR?: number;
+  topSet?: {
+    weight: number;
+    reps: number;
+  };
+  userFeedback?: string;
 }
 
 /**
