@@ -71,9 +71,15 @@
 
 ## 📖 Documentation
 
-- **[SETUP_GUIDE.md](./SETUP_GUIDE.md)** - Complete Phase 1 implementation details
-- **[PROJECT_ANALYSIS.md](./PROJECT_ANALYSIS.md)** - Full roadmap and technical architecture
-- **[supabase_schema.sql](./supabase_schema.sql)** - Database schema with RLS policies
+Detailed documentation is available in the `/docs` folder (local only):
+- Setup guides and troubleshooting
+- Phase implementation details
+- GitHub project management guides
+
+**Quick References:**
+- Database schema: See `supabase_schema.sql`
+- Setup scripts: See `/scripts` folder
+- Project structure: See below
 
 ## 🏗️ Project Structure
 
