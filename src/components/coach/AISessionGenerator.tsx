@@ -13,30 +13,14 @@ import { Sparkles, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react';
 import { WorkoutTypeSelector, type WorkoutType } from './WorkoutTypeSelector';
 import { ExerciseCard } from './ExerciseCard';
 import { cn } from '@/lib/utils';
-
-interface Exercise {
-  name: string;
-  muscleGroups: string[];
-  sets: number;
-  targetReps: string;
-  targetRIR: string;
-  restSeconds: number;
-  coachNote: string;
-}
-
-interface WorkoutResponse {
-  workoutType: string;
-  exercises: Exercise[];
-  summary: string;
-  estimatedDuration?: number;
-}
+import type { AIWorkoutResponse } from '@/lib/ai/types';
 
 type GenerationState = 'idle' | 'generating' | 'success' | 'error';
 
 export function AISessionGenerator() {
   const [state, setState] = useState<GenerationState>('idle');
   const [selectedType, setSelectedType] = useState<WorkoutType | null>(null);
-  const [workout, setWorkout] = useState<WorkoutResponse | null>(null);
+  const [workout, setWorkout] = useState<AIWorkoutResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [generationTime, setGenerationTime] = useState<number>(0);
 
@@ -46,7 +30,7 @@ export function AISessionGenerator() {
   };
 
   const handleGenerate = async () => {
-    if (!selectedType) return;
+    if (!selectedType || state === 'generating') return;
 
     setState('generating');
     setError(null);
@@ -134,7 +118,7 @@ export function AISessionGenerator() {
                 >
                   <button
                     onClick={handleGenerate}
-                    disabled={false}
+                    disabled={state !== 'idle'}
                     className={cn(
                       'group relative px-8 py-4 rounded-xl font-semibold text-lg',
                       'bg-gradient-to-r from-purple-500 to-indigo-500',
