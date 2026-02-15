@@ -94,11 +94,11 @@ export function WorkoutTypeSelector({
 }: WorkoutTypeSelectorProps) {
   return (
     <div className="space-y-4">
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
+      <div className="text-center space-y-2 px-4">
+        <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
           What are you training today?
         </h2>
-        <p className="text-slate-400 text-sm">
+        <p className="text-slate-400 text-xs md:text-sm">
           Choose your workout type and let the AI coach generate your session
         </p>
       </div>
@@ -117,7 +117,7 @@ export function WorkoutTypeSelector({
               onClick={() => !disabled && onSelect(option.type)}
               disabled={disabled}
               className={cn(
-                'group relative overflow-hidden rounded-xl p-4',
+                'group relative overflow-hidden rounded-xl p-3 md:p-4',
                 'bg-white/5 backdrop-blur-md border border-white/10',
                 'hover:bg-white/10 hover:border-purple-500/50',
                 'transition-all duration-300',
@@ -139,21 +139,21 @@ export function WorkoutTypeSelector({
                 {/* Icon */}
                 <div
                   className={cn(
-                    'w-12 h-12 rounded-lg flex items-center justify-center',
+                    'w-10 h-10 md:w-12 md:h-12 rounded-lg flex items-center justify-center',
                     'bg-gradient-to-br',
                     option.color,
                     'group-hover:scale-110 transition-transform'
                   )}
                 >
-                  <Icon className="w-6 h-6 text-white" />
+                  <Icon className="w-5 h-5 md:w-6 md:h-6 text-white" />
                 </div>
 
                 {/* Text */}
                 <div className="text-left">
-                  <h3 className="font-semibold text-white group-hover:text-purple-300 transition-colors">
+                  <h3 className="text-sm md:text-base font-semibold text-white group-hover:text-purple-300 transition-colors break-words">
                     {option.type}
                   </h3>
-                  <p className="text-xs text-slate-400 mt-1">{option.description}</p>
+                  <p className="text-xs text-slate-400 mt-1 break-words">{option.description}</p>
                 </div>
 
                 {/* Selected indicator */}
