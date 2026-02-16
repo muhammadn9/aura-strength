@@ -60,9 +60,10 @@ export default function ProfileSetupPage() {
         return
       }
 
-      const { error: insertError } = await supabase
+      // Use upsert to handle both insert and update cases
+      const { error: upsertError } = await supabase
         .from('profiles')
-        .insert({
+        .upsert({
           user_id: user.id,
           age: parseInt(formData.age),
           height: parseFloat(formData.height),
@@ -70,10 +71,13 @@ export default function ProfileSetupPage() {
           training_age: parseInt(formData.training_age),
           split_preference: formData.split_preference,
           training_goals: formData.training_goals,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id' // Update if user_id already exists
         })
 
-      if (insertError) {
-        setError(insertError.message)
+      if (upsertError) {
+        setError(upsertError.message)
         return
       }
 

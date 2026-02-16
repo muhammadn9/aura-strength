@@ -152,14 +152,27 @@ export async function POST(request: NextRequest) {
     try {
       context = await buildAIContext(user.id, workoutType);
       console.log(
-        `[API /coach] Context built: ${context.lastTwoWorkouts.length} previous workouts, ${context.personalRecords.length} PRs`
+        `[API /coach] Context built successfully:`,
+        `User: ${context.userProfile.userId}`,
+        `Age: ${context.userProfile.age}`,
+        `Previous workouts: ${context.lastTwoWorkouts.length}`,
+        `PRs: ${context.personalRecords.length}`
       );
     } catch (error) {
       console.error('[API /coach] Error building context:', error);
+      console.error('[API /coach] Error details:', {
+        userId: user.id,
+        workoutType,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
+      });
       return NextResponse.json(
         {
-          error: 'Internal Server Error',
+          error: 'Context Builder Failed',
           message: 'Failed to fetch your workout history. Please try again.',
+          details: process.env.NODE_ENV === 'development'
+            ? (error instanceof Error ? error.message : String(error))
+            : undefined,
         },
         { status: 500 }
       );
@@ -170,6 +183,7 @@ export async function POST(request: NextRequest) {
 
     // 6. Call Gemini AI
     console.log('[API /coach] Calling Gemini AI...');
+    console.log('[API /coach] Using API key:', process.env.GOOGLE_GENERATIVE_AI_API_KEY ? 'SET (length: ' + process.env.GOOGLE_GENERATIVE_AI_API_KEY.length + ')' : 'NOT SET');
 
     let result;
     try {
@@ -185,6 +199,8 @@ export async function POST(request: NextRequest) {
       console.log('[API /coach] AI generation complete');
     } catch (error: unknown) {
       console.error('[API /coach] Gemini API error:', error);
+      console.error('[API /coach] Error type:', error?.constructor?.name);
+      console.error('[API /coach] Error details:', JSON.stringify(error, null, 2));
 
       // Handle specific API errors
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -194,6 +210,7 @@ export async function POST(request: NextRequest) {
           {
             error: 'Configuration Error',
             message: 'AI service is not properly configured. Please contact support.',
+            details: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
           },
           { status: 500 }
         );
@@ -204,6 +221,7 @@ export async function POST(request: NextRequest) {
           {
             error: 'Service Unavailable',
             message: 'AI service is temporarily unavailable. Please try again in a few minutes.',
+            details: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
           },
           { status: 503 }
         );
@@ -213,6 +231,7 @@ export async function POST(request: NextRequest) {
         {
           error: 'AI Generation Failed',
           message: 'Failed to generate workout. Please try again.',
+          details: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
         },
         { status: 500 }
       );
