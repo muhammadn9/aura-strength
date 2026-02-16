@@ -188,7 +188,7 @@ export async function POST(request: NextRequest) {
     let result;
     try {
       result = await generateObject({
-        model: google('gemini-1.5-pro'),
+        model: google('gemini-2.5-flash'), // Updated to current model (was gemini-1.5-pro)
         system: COACH_SYSTEM_PROMPT,
         prompt: userMessage,
         schema: WorkoutResponseSchema,
