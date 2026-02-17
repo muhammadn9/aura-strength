@@ -6,11 +6,11 @@
  * Live workout tracking with set logging
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useWorkoutSession } from '@/components/workout/WorkoutSessionProvider';
 import AuraBackground from '@/components/aura/AuraBackground';
 import GlassCard from '@/components/aura/GlassCard';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Dumbbell,
   ChevronLeft,
@@ -20,6 +20,10 @@ import {
   Pause,
   Play,
   AlertCircle,
+  Timer,
+  Volume2,
+  VolumeX,
+  SkipForward,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -55,6 +59,12 @@ export default function WorkoutSessionPage() {
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
+  // Rest Timer State
+  const [isResting, setIsResting] = useState(false);
+  const [restTimeRemaining, setRestTimeRemaining] = useState(0);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
   const currentExercise = getCurrentExercise();
 
   // Redirect if no active session
@@ -66,6 +76,48 @@ export default function WorkoutSessionPage() {
       return () => clearTimeout(timer);
     }
   }, [session, isLoading, router]);
+
+  // Rest Timer Countdown
+  useEffect(() => {
+    if (!isResting || restTimeRemaining <= 0) return;
+
+    const interval = setInterval(() => {
+      setRestTimeRemaining(prev => {
+        if (prev <= 1) {
+          setIsResting(false);
+          // Play sound when timer ends
+          if (soundEnabled && audioRef.current) {
+            audioRef.current.play().catch(() => {
+              // Ignore autoplay errors
+            });
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isResting, restTimeRemaining, soundEnabled]);
+
+  // Start rest timer
+  const startRestTimer = useCallback((seconds: number) => {
+    setRestTimeRemaining(seconds);
+    setIsResting(true);
+  }, []);
+
+  // Skip rest
+  const skipRest = useCallback(() => {
+    setIsResting(false);
+    setRestTimeRemaining(0);
+  }, []);
+
+  // Format time as MM:SS
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   // Toggle feedback tag selection
   const toggleTag = (tagId: string) => {
@@ -125,6 +177,13 @@ export default function WorkoutSessionPage() {
       setRir('');
       setSelectedTags([]);
       setFeedbackNote('');
+
+      // Start rest timer if there are more sets to do
+      const newCompletedSets = (currentExercise?.completedSets.length || 0) + 1;
+      const targetSetsCount = currentExercise?.targetSets || 0;
+      if (newCompletedSets < targetSetsCount && currentExercise?.restSeconds) {
+        startRestTimer(currentExercise.restSeconds);
+      }
     } catch (err) {
       console.error('Failed to log set:', err);
       setActionError('Failed to log set. Please try again.');
@@ -343,6 +402,74 @@ export default function WorkoutSessionPage() {
                   </div>
                 )}
 
+                {/* Rest Timer */}
+                <AnimatePresence>
+                  {isResting && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      className="mt-6"
+                    >
+                      <div className="p-6 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 rounded-xl">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-2">
+                            <Timer className="w-5 h-5 text-indigo-400" />
+                            <span className="text-white font-semibold">Rest Timer</span>
+                          </div>
+                          <button
+                            onClick={() => setSoundEnabled(!soundEnabled)}
+                            className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition"
+                            aria-label={soundEnabled ? 'Mute sound' : 'Enable sound'}
+                          >
+                            {soundEnabled ? (
+                              <Volume2 className="w-4 h-4 text-white" />
+                            ) : (
+                              <VolumeX className="w-4 h-4 text-slate-400" />
+                            )}
+                          </button>
+                        </div>
+
+                        {/* Countdown Display */}
+                        <div className="text-center mb-4">
+                          <motion.div
+                            key={restTimeRemaining}
+                            initial={{ scale: 1.1 }}
+                            animate={{ scale: 1 }}
+                            className="text-5xl font-bold text-white tabular-nums"
+                          >
+                            {formatTime(restTimeRemaining)}
+                          </motion.div>
+                          <p className="text-slate-400 text-sm mt-1">
+                            Rest before next set
+                          </p>
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-4">
+                          <motion.div
+                            className="h-full bg-gradient-to-r from-indigo-500 to-purple-500"
+                            initial={{ width: '100%' }}
+                            animate={{
+                              width: `${(restTimeRemaining / (currentExercise?.restSeconds || 60)) * 100}%`
+                            }}
+                            transition={{ duration: 0.5 }}
+                          />
+                        </div>
+
+                        {/* Skip Button */}
+                        <button
+                          onClick={skipRest}
+                          className="w-full py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition flex items-center justify-center gap-2"
+                        >
+                          <SkipForward className="w-4 h-4" />
+                          Skip Rest
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 {/* Completed Sets */}
                 {completedSets > 0 && (
                   <div className="mt-6">
@@ -443,6 +570,13 @@ export default function WorkoutSessionPage() {
             </GlassCard>
           </div>
         )}
+
+        {/* Hidden audio element for rest timer notification */}
+        <audio
+          ref={audioRef}
+          preload="auto"
+          src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2Mi42Njo+PlYyBdGtxfYKGi5KVl5iYl5eVkYqBdW1tdX+HjJGVl5mZmZeVko2FfHRwdH2EiY6TlpeYmJeVkoyEe3RxdX2Ei5CVl5mZmJeVkYuDe3RxdH2EiY+Tl5mZmJeVkYyEe3RxdX2Fi5CVl5mZmJeVkouDe3RxdH6Fi5CVl5mZmJeWkouDe3RxdX6Fi5CVl5mZmJeVkoyEe3RxdX6Fi5GVl5mZmJeVkouDe3RxdX6Fi5GVl5mZmJeWkouDe3VxdX6Fi5CVl5mZmJeVkoyEe3RxdX6Fi5GVl5mZmJeVkYyDe3RxdX6Fi5GVl5mZmJeVkoyDe3Rxdn6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyEfHVxdX6Fi5GVl5mZmJeVkoyEe3RxdX6Fi5GVl5mZmJeWkoyEe3VxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyEe3RxdX6Fi5GVl5mZmJeVkouDe3RxdX6Fi5GVl5mZmJeWkoyEe3VxdX6Fi5GVl5mZmJeVkoyEe3RxdX6Fi5GVl5mZmJeVkoyEe3VxdX6Fi5GVl5mZmJeVkoyEe3RxdX6Gi5GVl5mZmJeVkoyEe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkouDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3VxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkYyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkYyEe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3VxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkouDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmA=="
+        />
       </div>
     </>
   );
