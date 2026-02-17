@@ -54,6 +54,7 @@ export function AISessionGenerator() {
     } catch (err) {
       console.error('Failed to start session:', err);
       setError('Failed to start workout session');
+      setState('error');
     }
   };
 
