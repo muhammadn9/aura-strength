@@ -6,7 +6,7 @@
  * Live workout tracking with set logging
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useWorkoutSession } from '@/components/workout/WorkoutSessionProvider';
 import AuraBackground from '@/components/aura/AuraBackground';
 import GlassCard from '@/components/aura/GlassCard';
@@ -63,9 +63,32 @@ export default function WorkoutSessionPage() {
   const [isResting, setIsResting] = useState(false);
   const [restTimeRemaining, setRestTimeRemaining] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [initialRestTime, setInitialRestTime] = useState(0);
 
   const currentExercise = getCurrentExercise();
+
+  // Play beep sound using Web Audio API
+  const playBeep = useCallback(() => {
+    if (!soundEnabled) return;
+    try {
+      const audioContext = new (window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.frequency.value = 800;
+      oscillator.type = 'sine';
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.5);
+    } catch {
+      // Ignore audio errors
+    }
+  }, [soundEnabled]);
 
   // Redirect if no active session
   useEffect(() => {
@@ -79,29 +102,26 @@ export default function WorkoutSessionPage() {
 
   // Rest Timer Countdown
   useEffect(() => {
-    if (!isResting || restTimeRemaining <= 0) return;
+    if (!isResting || restTimeRemaining <= 0) {
+      // Timer finished - play sound
+      if (restTimeRemaining === 0 && !isResting) return;
+      if (restTimeRemaining <= 0 && isResting) {
+        setIsResting(false);
+        playBeep();
+      }
+      return;
+    }
 
     const interval = setInterval(() => {
-      setRestTimeRemaining(prev => {
-        if (prev <= 1) {
-          setIsResting(false);
-          // Play sound when timer ends
-          if (soundEnabled && audioRef.current) {
-            audioRef.current.play().catch(() => {
-              // Ignore autoplay errors
-            });
-          }
-          return 0;
-        }
-        return prev - 1;
-      });
+      setRestTimeRemaining(prev => prev - 1);
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isResting, restTimeRemaining, soundEnabled]);
+  }, [isResting, restTimeRemaining, playBeep]);
 
   // Start rest timer
   const startRestTimer = useCallback((seconds: number) => {
+    setInitialRestTime(seconds);
     setRestTimeRemaining(seconds);
     setIsResting(true);
   }, []);
@@ -451,7 +471,7 @@ export default function WorkoutSessionPage() {
                             className="h-full bg-gradient-to-r from-indigo-500 to-purple-500"
                             initial={{ width: '100%' }}
                             animate={{
-                              width: `${(restTimeRemaining / (currentExercise?.restSeconds || 60)) * 100}%`
+                              width: `${initialRestTime > 0 ? (restTimeRemaining / initialRestTime) * 100 : 0}%`
                             }}
                             transition={{ duration: 0.5 }}
                           />
@@ -570,13 +590,6 @@ export default function WorkoutSessionPage() {
             </GlassCard>
           </div>
         )}
-
-        {/* Hidden audio element for rest timer notification */}
-        <audio
-          ref={audioRef}
-          preload="auto"
-          src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2Mi42Njo+PlYyBdGtxfYKGi5KVl5iYl5eVkYqBdW1tdX+HjJGVl5mZmZeVko2FfHRwdH2EiY6TlpeYmJeVkoyEe3RxdX2Ei5CVl5mZmJeVkYuDe3RxdH2EiY+Tl5mZmJeVkYyEe3RxdX2Fi5CVl5mZmJeVkouDe3RxdH6Fi5CVl5mZmJeWkouDe3RxdX6Fi5CVl5mZmJeVkoyEe3RxdX6Fi5GVl5mZmJeVkouDe3RxdX6Fi5GVl5mZmJeWkouDe3VxdX6Fi5CVl5mZmJeVkoyEe3RxdX6Fi5GVl5mZmJeVkYyDe3RxdX6Fi5GVl5mZmJeVkoyDe3Rxdn6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyEfHVxdX6Fi5GVl5mZmJeVkoyEe3RxdX6Fi5GVl5mZmJeWkoyEe3VxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyEe3RxdX6Fi5GVl5mZmJeVkouDe3RxdX6Fi5GVl5mZmJeWkoyEe3VxdX6Fi5GVl5mZmJeVkoyEe3RxdX6Fi5GVl5mZmJeVkoyEe3VxdX6Fi5GVl5mZmJeVkoyEe3RxdX6Gi5GVl5mZmJeVkoyEe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkouDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3VxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkYyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkYyEe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3VxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkouDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Gi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmJeVkoyDe3RxdX6Fi5GVl5mZmA=="
-        />
       </div>
     </>
   );
