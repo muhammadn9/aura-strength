@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ToastProvider } from "@/components/ToastProvider";
+import { WorkoutSessionProvider } from "@/components/workout/WorkoutSessionProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,7 +32,9 @@ export default function RootLayout({
       >
         <ErrorBoundary>
           <ToastProvider>
-            {children}
+            <WorkoutSessionProvider>
+              {children}
+            </WorkoutSessionProvider>
           </ToastProvider>
         </ErrorBoundary>
       </body>
