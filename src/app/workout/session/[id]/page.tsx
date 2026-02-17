@@ -315,14 +315,21 @@ export default function WorkoutSessionPage() {
                       </div>
 
                       {/* Optional Note */}
-                      <input
-                        type="text"
-                        value={feedbackNote}
-                        onChange={(e) => setFeedbackNote(e.target.value)}
-                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-purple-500"
-                        placeholder="Add a note (e.g., 'felt strong', 'grip slipping')..."
-                        maxLength={100}
-                      />
+                      <div>
+                        <label htmlFor="feedback-note" className="sr-only">
+                          Additional feedback note
+                        </label>
+                        <input
+                          id="feedback-note"
+                          type="text"
+                          value={feedbackNote}
+                          onChange={(e) => setFeedbackNote(e.target.value)}
+                          className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-purple-500"
+                          placeholder="Add a note (e.g., 'felt strong', 'grip slipping')..."
+                          maxLength={100}
+                          aria-label="Additional feedback note"
+                        />
+                      </div>
                     </div>
 
                     <button
