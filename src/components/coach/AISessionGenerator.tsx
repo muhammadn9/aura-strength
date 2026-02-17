@@ -14,6 +14,8 @@ import { WorkoutTypeSelector, type WorkoutType } from './WorkoutTypeSelector';
 import { ExerciseCard } from './ExerciseCard';
 import { cn } from '@/lib/utils';
 import type { AIWorkoutResponse } from '@/lib/ai/types';
+import { useWorkoutSession } from '@/components/workout/WorkoutSessionProvider';
+import type { SessionExercise } from '@/types/session';
 
 type GenerationState = 'idle' | 'generating' | 'success' | 'error';
 
@@ -23,10 +25,36 @@ export function AISessionGenerator() {
   const [workout, setWorkout] = useState<AIWorkoutResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [generationTime, setGenerationTime] = useState<number>(0);
+  const { startSession } = useWorkoutSession();
 
   const handleSelectType = (type: WorkoutType) => {
     setSelectedType(type);
     setError(null);
+  };
+
+  const handleStartWorkout = async () => {
+    if (!workout || !selectedType) return;
+
+    try {
+      // Convert AI workout to session exercises
+      const sessionExercises: SessionExercise[] = workout.exercises.map((ex, idx) => ({
+        id: crypto.randomUUID(),
+        name: ex.name,
+        muscleGroups: ex.muscleGroups,
+        targetSets: ex.sets,
+        targetReps: ex.targetReps,
+        targetRIR: ex.targetRIR,
+        restSeconds: ex.restSeconds,
+        coachNote: ex.coachNote,
+        completedSets: [],
+        order: idx,
+      }));
+
+      await startSession(selectedType, sessionExercises);
+    } catch (err) {
+      console.error('Failed to start session:', err);
+      setError('Failed to start workout session');
+    }
   };
 
   const handleGenerate = async () => {
@@ -250,7 +278,10 @@ export function AISessionGenerator() {
                 >
                   Generate Another
                 </button>
-                <button className="px-5 md:px-6 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-semibold hover:from-purple-600 hover:to-indigo-600 transition-all text-sm md:text-base">
+                <button
+                  onClick={handleStartWorkout}
+                  className="px-5 md:px-6 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-semibold hover:from-purple-600 hover:to-indigo-600 transition-all text-sm md:text-base"
+                >
                   Start Workout
                 </button>
               </div>
