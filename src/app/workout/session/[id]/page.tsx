@@ -6,11 +6,11 @@
  * Live workout tracking with set logging
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useWorkoutSession } from '@/components/workout/WorkoutSessionProvider';
 import AuraBackground from '@/components/aura/AuraBackground';
 import GlassCard from '@/components/aura/GlassCard';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Dumbbell,
   ChevronLeft,
@@ -20,6 +20,10 @@ import {
   Pause,
   Play,
   AlertCircle,
+  Timer,
+  Volume2,
+  VolumeX,
+  SkipForward,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -55,7 +59,36 @@ export default function WorkoutSessionPage() {
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
+  // Rest Timer State
+  const [isResting, setIsResting] = useState(false);
+  const [restTimeRemaining, setRestTimeRemaining] = useState(0);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [initialRestTime, setInitialRestTime] = useState(0);
+
   const currentExercise = getCurrentExercise();
+
+  // Play beep sound using Web Audio API
+  const playBeep = useCallback(() => {
+    if (!soundEnabled) return;
+    try {
+      const audioContext = new (window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.frequency.value = 800;
+      oscillator.type = 'sine';
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.5);
+    } catch {
+      // Ignore audio errors
+    }
+  }, [soundEnabled]);
 
   // Redirect if no active session
   useEffect(() => {
@@ -66,6 +99,45 @@ export default function WorkoutSessionPage() {
       return () => clearTimeout(timer);
     }
   }, [session, isLoading, router]);
+
+  // Rest Timer Countdown
+  useEffect(() => {
+    if (!isResting || restTimeRemaining <= 0) {
+      // Timer finished - play sound
+      if (restTimeRemaining === 0 && !isResting) return;
+      if (restTimeRemaining <= 0 && isResting) {
+        setIsResting(false);
+        playBeep();
+      }
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setRestTimeRemaining(prev => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isResting, restTimeRemaining, playBeep]);
+
+  // Start rest timer
+  const startRestTimer = useCallback((seconds: number) => {
+    setInitialRestTime(seconds);
+    setRestTimeRemaining(seconds);
+    setIsResting(true);
+  }, []);
+
+  // Skip rest
+  const skipRest = useCallback(() => {
+    setIsResting(false);
+    setRestTimeRemaining(0);
+  }, []);
+
+  // Format time as MM:SS
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   // Toggle feedback tag selection
   const toggleTag = (tagId: string) => {
@@ -125,6 +197,13 @@ export default function WorkoutSessionPage() {
       setRir('');
       setSelectedTags([]);
       setFeedbackNote('');
+
+      // Start rest timer if there are more sets to do
+      const newCompletedSets = (currentExercise?.completedSets.length || 0) + 1;
+      const targetSetsCount = currentExercise?.targetSets || 0;
+      if (newCompletedSets < targetSetsCount && currentExercise?.restSeconds) {
+        startRestTimer(currentExercise.restSeconds);
+      }
     } catch (err) {
       console.error('Failed to log set:', err);
       setActionError('Failed to log set. Please try again.');
@@ -342,6 +421,74 @@ export default function WorkoutSessionPage() {
                     </button>
                   </div>
                 )}
+
+                {/* Rest Timer */}
+                <AnimatePresence>
+                  {isResting && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      className="mt-6"
+                    >
+                      <div className="p-6 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 rounded-xl">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-2">
+                            <Timer className="w-5 h-5 text-indigo-400" />
+                            <span className="text-white font-semibold">Rest Timer</span>
+                          </div>
+                          <button
+                            onClick={() => setSoundEnabled(!soundEnabled)}
+                            className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition"
+                            aria-label={soundEnabled ? 'Mute sound' : 'Enable sound'}
+                          >
+                            {soundEnabled ? (
+                              <Volume2 className="w-4 h-4 text-white" />
+                            ) : (
+                              <VolumeX className="w-4 h-4 text-slate-400" />
+                            )}
+                          </button>
+                        </div>
+
+                        {/* Countdown Display */}
+                        <div className="text-center mb-4">
+                          <motion.div
+                            key={restTimeRemaining}
+                            initial={{ scale: 1.1 }}
+                            animate={{ scale: 1 }}
+                            className="text-5xl font-bold text-white tabular-nums"
+                          >
+                            {formatTime(restTimeRemaining)}
+                          </motion.div>
+                          <p className="text-slate-400 text-sm mt-1">
+                            Rest before next set
+                          </p>
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-4">
+                          <motion.div
+                            className="h-full bg-gradient-to-r from-indigo-500 to-purple-500"
+                            initial={{ width: '100%' }}
+                            animate={{
+                              width: `${initialRestTime > 0 ? (restTimeRemaining / initialRestTime) * 100 : 0}%`
+                            }}
+                            transition={{ duration: 0.5 }}
+                          />
+                        </div>
+
+                        {/* Skip Button */}
+                        <button
+                          onClick={skipRest}
+                          className="w-full py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition flex items-center justify-center gap-2"
+                        >
+                          <SkipForward className="w-4 h-4" />
+                          Skip Rest
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {/* Completed Sets */}
                 {completedSets > 0 && (
