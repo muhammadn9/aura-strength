@@ -6,7 +6,7 @@
  * Live workout tracking with set logging
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useWorkoutSession } from '@/components/workout/WorkoutSessionProvider';
 import AuraBackground from '@/components/aura/AuraBackground';
 import GlassCard from '@/components/aura/GlassCard';
@@ -19,6 +19,7 @@ import {
   X,
   Pause,
   Play,
+  AlertCircle,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -40,8 +41,19 @@ export default function WorkoutSessionPage() {
   const [reps, setReps] = useState('');
   const [rir, setRir] = useState('');
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const currentExercise = getCurrentExercise();
+
+  // Redirect if no active session
+  useEffect(() => {
+    if (!isLoading && !session) {
+      const timer = setTimeout(() => {
+        router.push('/dashboard');
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [session, isLoading, router]);
 
   if (!session) {
     return (
@@ -56,6 +68,7 @@ export default function WorkoutSessionPage() {
   const handleLogSet = async () => {
     if (!currentExercise || !weight || !reps || !rir) return;
 
+    setActionError(null);
     try {
       await logSet(session.currentExerciseIndex, {
         weight: parseFloat(weight),
@@ -70,26 +83,45 @@ export default function WorkoutSessionPage() {
       setRir('');
     } catch (err) {
       console.error('Failed to log set:', err);
+      setActionError('Failed to log set. Please try again.');
     }
   };
 
   const handleEndWorkout = async () => {
+    setActionError(null);
     try {
       await endSession();
     } catch (err) {
       console.error('Failed to end workout:', err);
+      setActionError('Failed to save workout. Please try again.');
     }
   };
 
   const isPaused = session.status === 'paused';
   const completedSets = currentExercise?.completedSets.length || 0;
-  const targetSets = currentExercise?.targetSets || 0;
-  const progress = (completedSets / targetSets) * 100;
+  const targetSets = currentExercise?.targetSets || 1; // Minimum 1 to avoid division by zero
+  const progress = targetSets > 0 ? (completedSets / targetSets) * 100 : 0;
 
   return (
     <>
       <AuraBackground />
       <div className="min-h-screen p-4">
+        {/* Error Alert */}
+        {actionError && (
+          <div className="max-w-4xl mx-auto mb-4">
+            <div className="p-4 bg-red-500/20 border border-red-500/30 rounded-lg flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+              <p className="text-red-300 text-sm">{actionError}</p>
+              <button
+                onClick={() => setActionError(null)}
+                className="ml-auto text-red-400 hover:text-red-300"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="max-w-4xl mx-auto mb-6">
           <div className="flex items-center justify-between">
@@ -188,6 +220,7 @@ export default function WorkoutSessionPage() {
                           className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500"
                           placeholder="60"
                           step="0.5"
+                          min="0"
                         />
                       </div>
                       <div>
@@ -198,6 +231,7 @@ export default function WorkoutSessionPage() {
                           onChange={(e) => setReps(e.target.value)}
                           className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500"
                           placeholder="10"
+                          min="1"
                         />
                       </div>
                       <div>
@@ -290,9 +324,14 @@ export default function WorkoutSessionPage() {
 
         {/* Exit Confirmation Modal */}
         {showExitConfirm && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="exit-modal-title"
+          >
             <GlassCard className="max-w-md">
-              <h3 className="text-xl font-bold text-white mb-4">Exit Workout?</h3>
+              <h3 id="exit-modal-title" className="text-xl font-bold text-white mb-4">Exit Workout?</h3>
               <p className="text-slate-300 mb-6">
                 Your progress has been auto-saved. You can return to this workout later.
               </p>

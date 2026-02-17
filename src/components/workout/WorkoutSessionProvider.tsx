@@ -127,14 +127,16 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
 
       const duration = Math.floor((Date.now() - session.startTime.getTime()) / 1000 / 60); // minutes
 
-      // Insert workout
+      // Insert workout (format date as YYYY-MM-DD for DATE column)
+      const formattedDate = session.startTime.toISOString().split('T')[0];
+
       const { data: workout, error: workoutError } = await supabase
         .from('workouts')
         .insert({
           user_id: user.id,
-          date: session.startTime.toISOString(),
+          date: formattedDate,
           workout_type: session.workoutType,
-          duration,
+          duration_minutes: duration,
           user_overall_feedback: overallFeedback || null,
         })
         .select()
@@ -159,12 +161,13 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
         // Insert sets
         if (exercise.completedSets.length > 0) {
           const setsToInsert = exercise.completedSets
-            .filter(set => set.completed)
-            .map(set => ({
+            .filter(set => set.completed && set.weight !== null && set.reps !== null && set.rir !== null)
+            .map((set, idx) => ({
               exercise_id: exerciseData.id,
-              weight: set.weight,
-              reps: set.reps,
-              rir: set.rir,
+              set_number: idx + 1,
+              weight: set.weight!,
+              reps: set.reps!,
+              rir: set.rir!,
               user_set_feedback: set.feedback || null,
               is_pr: false, // TODO: Calculate PR in future PR
             }));
@@ -262,9 +265,10 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
   }, [session]);
 
   const getCurrentSet = useCallback(() => {
+    if (!session) return null;
     const exercise = getCurrentExercise();
     if (!exercise) return null;
-    return exercise.completedSets[session!.currentSetIndex] || null;
+    return exercise.completedSets[session.currentSetIndex] || null;
   }, [session, getCurrentExercise]);
 
   const value: WorkoutSessionContextType = {
