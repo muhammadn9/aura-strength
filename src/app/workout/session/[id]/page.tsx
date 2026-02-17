@@ -23,6 +23,16 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
+// Quick feedback tags for sets
+const FEEDBACK_TAGS = [
+  { id: 'good-form', label: '✓ Good Form', color: 'bg-green-500/20 text-green-400 border-green-500/30' },
+  { id: 'shaky', label: '⚠ Shaky', color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' },
+  { id: 'joint-pain', label: '🔴 Joint Pain', color: 'bg-red-500/20 text-red-400 border-red-500/30' },
+  { id: 'easy', label: '💪 Easy', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
+  { id: 'hard', label: '🔥 Hard', color: 'bg-orange-500/20 text-orange-400 border-orange-500/30' },
+  { id: 'pr-attempt', label: '🏆 PR Attempt', color: 'bg-purple-500/20 text-purple-400 border-purple-500/30' },
+] as const;
+
 export default function WorkoutSessionPage() {
   const router = useRouter();
   const {
@@ -40,6 +50,8 @@ export default function WorkoutSessionPage() {
   const [weight, setWeight] = useState('');
   const [reps, setReps] = useState('');
   const [rir, setRir] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [feedbackNote, setFeedbackNote] = useState('');
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -54,6 +66,33 @@ export default function WorkoutSessionPage() {
       return () => clearTimeout(timer);
     }
   }, [session, isLoading, router]);
+
+  // Toggle feedback tag selection
+  const toggleTag = (tagId: string) => {
+    setSelectedTags(prev =>
+      prev.includes(tagId)
+        ? prev.filter(t => t !== tagId)
+        : [...prev, tagId]
+    );
+  };
+
+  // Build feedback string from tags and note
+  const buildFeedbackString = (): string | undefined => {
+    const parts: string[] = [];
+
+    if (selectedTags.length > 0) {
+      const tagLabels = selectedTags.map(id =>
+        FEEDBACK_TAGS.find(t => t.id === id)?.label.replace(/^[^\w]*\s*/, '') || id
+      );
+      parts.push(`[${tagLabels.join(', ')}]`);
+    }
+
+    if (feedbackNote.trim()) {
+      parts.push(feedbackNote.trim());
+    }
+
+    return parts.length > 0 ? parts.join(' ') : undefined;
+  };
 
   if (!session) {
     return (
@@ -70,17 +109,22 @@ export default function WorkoutSessionPage() {
 
     setActionError(null);
     try {
+      const feedback = buildFeedbackString();
+
       await logSet(session.currentExerciseIndex, {
         weight: parseFloat(weight),
         reps: parseInt(reps),
         rir: parseInt(rir),
         completed: true,
+        feedback,
       });
 
       // Clear inputs
       setWeight('');
       setReps('');
       setRir('');
+      setSelectedTags([]);
+      setFeedbackNote('');
     } catch (err) {
       console.error('Failed to log set:', err);
       setActionError('Failed to log set. Please try again.');
@@ -248,6 +292,46 @@ export default function WorkoutSessionPage() {
                       </div>
                     </div>
 
+                    {/* Per-Set Feedback Section */}
+                    <div className="space-y-3">
+                      <label className="block text-sm text-slate-400">How did this set feel? (optional)</label>
+
+                      {/* Quick Tags */}
+                      <div className="flex flex-wrap gap-2">
+                        {FEEDBACK_TAGS.map((tag) => (
+                          <button
+                            key={tag.id}
+                            type="button"
+                            onClick={() => toggleTag(tag.id)}
+                            className={`px-3 py-1.5 text-sm rounded-full border transition-all ${
+                              selectedTags.includes(tag.id)
+                                ? `${tag.color} border-current`
+                                : 'bg-white/5 text-slate-400 border-white/10 hover:bg-white/10'
+                            }`}
+                          >
+                            {tag.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Optional Note */}
+                      <div>
+                        <label htmlFor="feedback-note" className="sr-only">
+                          Additional feedback note
+                        </label>
+                        <input
+                          id="feedback-note"
+                          type="text"
+                          value={feedbackNote}
+                          onChange={(e) => setFeedbackNote(e.target.value)}
+                          className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-purple-500"
+                          placeholder="Add a note (e.g., 'felt strong', 'grip slipping')..."
+                          maxLength={100}
+                          aria-label="Additional feedback note"
+                        />
+                      </div>
+                    </div>
+
                     <button
                       onClick={handleLogSet}
                       disabled={!weight || !reps || !rir}
@@ -267,14 +351,21 @@ export default function WorkoutSessionPage() {
                       {currentExercise.completedSets.map((set, idx) => (
                         <div
                           key={idx}
-                          className="flex items-center justify-between p-3 bg-white/5 rounded-lg"
+                          className="p-3 bg-white/5 rounded-lg"
                         >
-                          <span className="text-slate-400">Set {set.setNumber}</span>
-                          <div className="flex gap-4 text-white">
-                            <span>{set.weight}kg</span>
-                            <span>{set.reps} reps</span>
-                            <span className="text-purple-400">{set.rir} RIR</span>
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-400">Set {set.setNumber}</span>
+                            <div className="flex gap-4 text-white">
+                              <span>{set.weight}kg</span>
+                              <span>{set.reps} reps</span>
+                              <span className="text-purple-400">{set.rir} RIR</span>
+                            </div>
                           </div>
+                          {set.feedback && (
+                            <p className="mt-2 text-sm text-slate-400 italic">
+                              {set.feedback}
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>
