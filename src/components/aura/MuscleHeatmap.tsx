@@ -1,31 +1,73 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { getMuscleVolumeData } from '@/lib/utils/muscle-volume'
 
 interface MuscleGroup {
   id: string
   name: string
   volume: number // 0-100 scale
+  totalSets: number
+  lastWorked: string | null
+}
+
+// Map muscle names to SVG IDs
+const MUSCLE_NAME_TO_ID: Record<string, string> = {
+  'Chest': 'chest',
+  'Front Delts': 'front-delts',
+  'Biceps': 'biceps',
+  'Quads': 'quads',
+  'Lats': 'lats',
+  'Rear Delts': 'rear-delts',
+  'Triceps': 'triceps',
+  'Glutes': 'glutes',
+  'Hamstrings': 'hamstrings',
+  'Traps': 'traps',
+  'Core': 'core',
+  'Calves': 'calves',
+  'Forearms': 'forearms',
 }
 
 export default function MuscleHeatmap() {
   const [view, setView] = useState<'front' | 'back'>('front')
   const [hoveredMuscle, setHoveredMuscle] = useState<string | null>(null)
+  const [muscleData, setMuscleData] = useState<MuscleGroup[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Mock data - will be replaced with real data from Supabase
-  const muscleData: MuscleGroup[] = [
-    { id: 'chest', name: 'Chest', volume: 75 },
-    { id: 'front-delts', name: 'Front Delts', volume: 60 },
-    { id: 'biceps', name: 'Biceps', volume: 45 },
-    { id: 'quads', name: 'Quads', volume: 80 },
-    { id: 'lats', name: 'Lats', volume: 55 },
-    { id: 'rear-delts', name: 'Rear Delts', volume: 40 },
-    { id: 'triceps', name: 'Triceps', volume: 70 },
-    { id: 'glutes', name: 'Glutes', volume: 50 },
-    { id: 'hamstrings', name: 'Hamstrings', volume: 65 },
-    { id: 'traps', name: 'Traps', volume: 35 },
-  ]
+  // Fetch real volume data
+  useEffect(() => {
+    const fetchVolumeData = async () => {
+      const supabase = createClient()
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          setIsLoading(false)
+          return
+        }
+
+        const volumeData = await getMuscleVolumeData(user.id, 7)
+
+        // Convert to MuscleGroup array
+        const muscles: MuscleGroup[] = Object.entries(volumeData).map(([name, data]) => ({
+          id: MUSCLE_NAME_TO_ID[name] || name.toLowerCase().replace(' ', '-'),
+          name,
+          volume: data.intensity,
+          totalSets: data.totalSets,
+          lastWorked: data.lastWorked,
+        }))
+
+        setMuscleData(muscles)
+      } catch (error) {
+        console.error('Failed to fetch muscle volume data:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchVolumeData()
+  }, [])
 
   const getMuscleOpacity = (muscleId: string) => {
     const muscle = muscleData.find(m => m.id === muscleId)
@@ -95,7 +137,14 @@ export default function MuscleHeatmap() {
               return muscle ? (
                 <div className="text-center">
                   <p className="text-sm font-semibold text-white">{muscle.name}</p>
-                  <p className="text-xs text-purple-400">Volume: {muscle.volume}%</p>
+                  <p className="text-xs text-purple-400">
+                    {muscle.totalSets} sets ({muscle.volume}% volume)
+                  </p>
+                  {muscle.lastWorked && (
+                    <p className="text-xs text-slate-500 mt-1">
+                      Last: {new Date(muscle.lastWorked).toLocaleDateString()}
+                    </p>
+                  )}
                 </div>
               ) : null
             })()}
