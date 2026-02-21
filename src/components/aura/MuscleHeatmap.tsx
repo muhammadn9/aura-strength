@@ -8,12 +8,11 @@ import { getMuscleVolumeData } from '@/lib/utils/muscle-volume'
 interface MuscleGroup {
   id: string
   name: string
-  volume: number // 0-100 scale
+  volume: number
   totalSets: number
   lastWorked: string | null
 }
 
-// Map muscle names to SVG IDs
 const MUSCLE_NAME_TO_ID: Record<string, string> = {
   'Chest': 'chest',
   'Front Delts': 'front-delts',
@@ -36,7 +35,6 @@ export default function MuscleHeatmap() {
   const [muscleData, setMuscleData] = useState<MuscleGroup[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  // Fetch real volume data
   useEffect(() => {
     const fetchVolumeData = async () => {
       const supabase = createClient()
@@ -49,7 +47,6 @@ export default function MuscleHeatmap() {
 
         const volumeData = await getMuscleVolumeData(user.id, 7)
 
-        // Convert to MuscleGroup array
         const muscles: MuscleGroup[] = Object.entries(volumeData).map(([name, data]) => ({
           id: MUSCLE_NAME_TO_ID[name] || name.toLowerCase().replace(' ', '-'),
           name,
@@ -71,12 +68,21 @@ export default function MuscleHeatmap() {
 
   const getMuscleOpacity = (muscleId: string) => {
     const muscle = muscleData.find(m => m.id === muscleId)
-    return muscle ? muscle.volume / 100 : 0.1
+    return muscle ? Math.max(muscle.volume / 100, 0.08) : 0.08
   }
 
   const getMuscleInfo = (muscleId: string) => {
     return muscleData.find(m => m.id === muscleId)
   }
+
+  const muscleProps = (id: string) => ({
+    fill: `rgba(168, 85, 247, ${getMuscleOpacity(id)})`,
+    stroke: 'rgba(168, 85, 247, 0.3)',
+    strokeWidth: 0.5,
+    className: 'cursor-pointer transition-all duration-200 hover:brightness-150',
+    onMouseEnter: () => setHoveredMuscle(id),
+    onMouseLeave: () => setHoveredMuscle(null),
+  })
 
   return (
     <div className="relative w-full max-w-2xl mx-auto">
@@ -84,6 +90,7 @@ export default function MuscleHeatmap() {
       <div className="flex justify-center gap-2 mb-6">
         <button
           onClick={() => setView('front')}
+          aria-label="Front view"
           className={`px-6 py-2 rounded-lg font-medium transition-all ${
             view === 'front'
               ? 'bg-purple-500 text-white'
@@ -94,6 +101,7 @@ export default function MuscleHeatmap() {
         </button>
         <button
           onClick={() => setView('back')}
+          aria-label="Back view"
           className={`px-6 py-2 rounded-lg font-medium transition-all ${
             view === 'back'
               ? 'bg-purple-500 text-white'
@@ -113,15 +121,9 @@ export default function MuscleHeatmap() {
           transition={{ duration: 0.3 }}
         >
           {view === 'front' ? (
-            <FrontView
-              getMuscleOpacity={getMuscleOpacity}
-              onMuscleHover={setHoveredMuscle}
-            />
+            <FrontView muscleProps={muscleProps} />
           ) : (
-            <BackView
-              getMuscleOpacity={getMuscleOpacity}
-              onMuscleHover={setHoveredMuscle}
-            />
+            <BackView muscleProps={muscleProps} />
           )}
         </motion.div>
 
@@ -170,250 +172,156 @@ export default function MuscleHeatmap() {
   )
 }
 
-// Front View Component
-function FrontView({
-  getMuscleOpacity,
-  onMuscleHover
-}: {
-  getMuscleOpacity: (id: string) => number
-  onMuscleHover: (id: string | null) => void
-}) {
+type MusclePropsFunc = (id: string) => {
+  fill: string;
+  stroke: string;
+  strokeWidth: number;
+  className: string;
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
+}
+
+// ============================================================================
+// Front View - Anatomical silhouette with proper muscle shapes
+// ============================================================================
+function FrontView({ muscleProps }: { muscleProps: MusclePropsFunc }) {
   return (
-    <svg viewBox="0 0 200 400" className="w-full h-full">
+    <svg viewBox="0 0 200 440" className="w-full h-full" role="img" aria-label="Front muscle view">
+      <defs>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+
       {/* Head */}
-      <ellipse cx="100" cy="30" rx="20" ry="25" fill="#1e293b" />
+      <ellipse cx="100" cy="28" rx="16" ry="20" fill="#1e293b" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" />
+      {/* Neck */}
+      <rect x="93" y="47" width="14" height="12" fill="#1e293b" />
 
-      {/* Chest */}
-      <path
-        d="M 75 60 Q 75 80, 85 90 L 85 110 L 75 110 Q 70 85, 70 60 Z"
-        fill={`rgba(168, 85, 247, ${getMuscleOpacity('chest')})`}
-        stroke="rgba(255,255,255,0.1)"
-        strokeWidth="1"
-        className="cursor-pointer transition-all hover:brightness-125"
-        onMouseEnter={() => onMuscleHover('chest')}
-        onMouseLeave={() => onMuscleHover(null)}
-      />
-      <path
-        d="M 125 60 Q 125 80, 115 90 L 115 110 L 125 110 Q 130 85, 130 60 Z"
-        fill={`rgba(168, 85, 247, ${getMuscleOpacity('chest')})`}
-        stroke="rgba(255,255,255,0.1)"
-        strokeWidth="1"
-        className="cursor-pointer transition-all hover:brightness-125"
-        onMouseEnter={() => onMuscleHover('chest')}
-        onMouseLeave={() => onMuscleHover(null)}
-      />
+      {/* === FRONT DELTS === */}
+      <path d="M 68 58 Q 55 60, 52 75 Q 52 88, 58 95 L 72 85 Q 72 70, 68 58 Z" {...muscleProps('front-delts')} />
+      <path d="M 132 58 Q 145 60, 148 75 Q 148 88, 142 95 L 128 85 Q 128 70, 132 58 Z" {...muscleProps('front-delts')} />
 
-      {/* Front Delts */}
-      <ellipse
-        cx="65" cy="70" rx="12" ry="18"
-        fill={`rgba(168, 85, 247, ${getMuscleOpacity('front-delts')})`}
-        stroke="rgba(255,255,255,0.1)"
-        strokeWidth="1"
-        className="cursor-pointer transition-all hover:brightness-125"
-        onMouseEnter={() => onMuscleHover('front-delts')}
-        onMouseLeave={() => onMuscleHover(null)}
-      />
-      <ellipse
-        cx="135" cy="70" rx="12" ry="18"
-        fill={`rgba(168, 85, 247, ${getMuscleOpacity('front-delts')})`}
-        stroke="rgba(255,255,255,0.1)"
-        strokeWidth="1"
-        className="cursor-pointer transition-all hover:brightness-125"
-        onMouseEnter={() => onMuscleHover('front-delts')}
-        onMouseLeave={() => onMuscleHover(null)}
-      />
+      {/* === CHEST === */}
+      <path d="M 72 62 Q 75 58, 95 60 L 95 82 Q 85 92, 72 85 Z" {...muscleProps('chest')} filter="url(#glow)" />
+      <path d="M 128 62 Q 125 58, 105 60 L 105 82 Q 115 92, 128 85 Z" {...muscleProps('chest')} filter="url(#glow)" />
 
-      {/* Biceps */}
-      <ellipse
-        cx="55" cy="120" rx="10" ry="25"
-        fill={`rgba(168, 85, 247, ${getMuscleOpacity('biceps')})`}
-        stroke="rgba(255,255,255,0.1)"
-        strokeWidth="1"
-        className="cursor-pointer transition-all hover:brightness-125"
-        onMouseEnter={() => onMuscleHover('biceps')}
-        onMouseLeave={() => onMuscleHover(null)}
-      />
-      <ellipse
-        cx="145" cy="120" rx="10" ry="25"
-        fill={`rgba(168, 85, 247, ${getMuscleOpacity('biceps')})`}
-        stroke="rgba(255,255,255,0.1)"
-        strokeWidth="1"
-        className="cursor-pointer transition-all hover:brightness-125"
-        onMouseEnter={() => onMuscleHover('biceps')}
-        onMouseLeave={() => onMuscleHover(null)}
-      />
+      {/* === BICEPS === */}
+      <path d="M 54 98 Q 48 105, 46 125 Q 46 140, 50 148 L 58 145 Q 62 130, 62 115 Q 62 103, 58 98 Z" {...muscleProps('biceps')} />
+      <path d="M 146 98 Q 152 105, 154 125 Q 154 140, 150 148 L 142 145 Q 138 130, 138 115 Q 138 103, 142 98 Z" {...muscleProps('biceps')} />
 
-      {/* Core/Abs */}
-      <rect
-        x="85" y="115" width="30" height="50" rx="5"
-        fill="rgba(168, 85, 247, 0.2)"
-        stroke="rgba(255,255,255,0.1)"
-        strokeWidth="1"
-      />
+      {/* === FOREARMS === */}
+      <path d="M 48 150 Q 44 160, 42 178 Q 42 192, 44 200 L 52 198 Q 54 185, 55 170 Q 55 158, 52 150 Z" {...muscleProps('forearms')} />
+      <path d="M 152 150 Q 156 160, 158 178 Q 158 192, 156 200 L 148 198 Q 146 185, 145 170 Q 145 158, 148 150 Z" {...muscleProps('forearms')} />
 
-      {/* Quads */}
-      <rect
-        x="75" y="200" width="15" height="60" rx="7"
-        fill={`rgba(168, 85, 247, ${getMuscleOpacity('quads')})`}
-        stroke="rgba(255,255,255,0.1)"
-        strokeWidth="1"
-        className="cursor-pointer transition-all hover:brightness-125"
-        onMouseEnter={() => onMuscleHover('quads')}
-        onMouseLeave={() => onMuscleHover(null)}
-      />
-      <rect
-        x="110" y="200" width="15" height="60" rx="7"
-        fill={`rgba(168, 85, 247, ${getMuscleOpacity('quads')})`}
-        stroke="rgba(255,255,255,0.1)"
-        strokeWidth="1"
-        className="cursor-pointer transition-all hover:brightness-125"
-        onMouseEnter={() => onMuscleHover('quads')}
-        onMouseLeave={() => onMuscleHover(null)}
-      />
+      {/* === CORE / ABS (segmented) === */}
+      <rect x="88" y="88" width="10" height="12" rx="2" {...muscleProps('core')} />
+      <rect x="102" y="88" width="10" height="12" rx="2" {...muscleProps('core')} />
+      <rect x="88" y="103" width="10" height="12" rx="2" {...muscleProps('core')} />
+      <rect x="102" y="103" width="10" height="12" rx="2" {...muscleProps('core')} />
+      <rect x="88" y="118" width="10" height="12" rx="2" {...muscleProps('core')} />
+      <rect x="102" y="118" width="10" height="12" rx="2" {...muscleProps('core')} />
+      {/* Obliques */}
+      <path d="M 78 90 Q 75 105, 78 130 L 86 128 L 86 88 Z" {...muscleProps('core')} />
+      <path d="M 122 90 Q 125 105, 122 130 L 114 128 L 114 88 Z" {...muscleProps('core')} />
 
-      {/* Torso/Body Connection */}
-      <rect x="80" y="55" width="40" height="15" fill="#1e293b" />
-      <rect x="85" y="165" width="30" height="35" fill="#1e293b" />
+      {/* Hip area */}
+      <path d="M 80 135 Q 82 148, 80 165 L 100 170 L 120 165 Q 118 148, 120 135 Z" fill="#1e293b" />
+
+      {/* === QUADS === */}
+      <path d="M 76 170 Q 70 195, 68 230 Q 68 260, 72 280 L 82 280 Q 86 260, 87 240 Q 90 210, 92 185 L 95 170 Z" {...muscleProps('quads')} filter="url(#glow)" />
+      <path d="M 124 170 Q 130 195, 132 230 Q 132 260, 128 280 L 118 280 Q 114 260, 113 240 Q 110 210, 108 185 L 105 170 Z" {...muscleProps('quads')} filter="url(#glow)" />
+
+      {/* Knees */}
+      <ellipse cx="78" cy="288" rx="8" ry="6" fill="#1e293b" />
+      <ellipse cx="122" cy="288" rx="8" ry="6" fill="#1e293b" />
+
+      {/* === CALVES === */}
+      <path d="M 72 296 Q 68 315, 68 340 Q 68 365, 70 380 L 80 380 Q 82 365, 82 340 Q 82 318, 80 296 Z" {...muscleProps('calves')} />
+      <path d="M 128 296 Q 132 315, 132 340 Q 132 365, 130 380 L 120 380 Q 118 365, 118 340 Q 118 318, 120 296 Z" {...muscleProps('calves')} />
+
+      {/* Feet */}
+      <ellipse cx="75" cy="388" rx="10" ry="5" fill="#1e293b" />
+      <ellipse cx="125" cy="388" rx="10" ry="5" fill="#1e293b" />
+
+      {/* Hands */}
+      <ellipse cx="46" cy="206" rx="5" ry="7" fill="#1e293b" />
+      <ellipse cx="154" cy="206" rx="5" ry="7" fill="#1e293b" />
     </svg>
   )
 }
 
-// Back View Component
-function BackView({
-  getMuscleOpacity,
-  onMuscleHover
-}: {
-  getMuscleOpacity: (id: string) => number
-  onMuscleHover: (id: string | null) => void
-}) {
+// ============================================================================
+// Back View - Anatomical silhouette with proper muscle shapes
+// ============================================================================
+function BackView({ muscleProps }: { muscleProps: MusclePropsFunc }) {
   return (
-    <svg viewBox="0 0 200 400" className="w-full h-full">
+    <svg viewBox="0 0 200 440" className="w-full h-full" role="img" aria-label="Back muscle view">
+      <defs>
+        <filter id="glowBack">
+          <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+
       {/* Head */}
-      <ellipse cx="100" cy="30" rx="20" ry="25" fill="#1e293b" />
+      <ellipse cx="100" cy="28" rx="16" ry="20" fill="#1e293b" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" />
+      {/* Neck */}
+      <rect x="93" y="47" width="14" height="12" fill="#1e293b" />
 
-      {/* Traps */}
-      <path
-        d="M 80 50 L 100 60 L 120 50 L 120 70 L 100 65 L 80 70 Z"
-        fill={`rgba(168, 85, 247, ${getMuscleOpacity('traps')})`}
-        stroke="rgba(255,255,255,0.1)"
-        strokeWidth="1"
-        className="cursor-pointer transition-all hover:brightness-125"
-        onMouseEnter={() => onMuscleHover('traps')}
-        onMouseLeave={() => onMuscleHover(null)}
-      />
+      {/* === TRAPS === */}
+      <path d="M 80 52 Q 85 48, 100 54 L 100 72 Q 90 68, 82 64 Z" {...muscleProps('traps')} />
+      <path d="M 120 52 Q 115 48, 100 54 L 100 72 Q 110 68, 118 64 Z" {...muscleProps('traps')} />
 
-      {/* Rear Delts */}
-      <ellipse
-        cx="65" cy="75" rx="12" ry="15"
-        fill={`rgba(168, 85, 247, ${getMuscleOpacity('rear-delts')})`}
-        stroke="rgba(255,255,255,0.1)"
-        strokeWidth="1"
-        className="cursor-pointer transition-all hover:brightness-125"
-        onMouseEnter={() => onMuscleHover('rear-delts')}
-        onMouseLeave={() => onMuscleHover(null)}
-      />
-      <ellipse
-        cx="135" cy="75" rx="12" ry="15"
-        fill={`rgba(168, 85, 247, ${getMuscleOpacity('rear-delts')})`}
-        stroke="rgba(255,255,255,0.1)"
-        strokeWidth="1"
-        className="cursor-pointer transition-all hover:brightness-125"
-        onMouseEnter={() => onMuscleHover('rear-delts')}
-        onMouseLeave={() => onMuscleHover(null)}
-      />
+      {/* === REAR DELTS === */}
+      <path d="M 68 58 Q 55 62, 52 78 Q 54 90, 58 96 L 70 88 Q 68 72, 68 58 Z" {...muscleProps('rear-delts')} />
+      <path d="M 132 58 Q 145 62, 148 78 Q 146 90, 142 96 L 130 88 Q 132 72, 132 58 Z" {...muscleProps('rear-delts')} />
 
-      {/* Lats */}
-      <path
-        d="M 70 85 Q 60 110, 65 140 L 85 145 L 85 95 Z"
-        fill={`rgba(168, 85, 247, ${getMuscleOpacity('lats')})`}
-        stroke="rgba(255,255,255,0.1)"
-        strokeWidth="1"
-        className="cursor-pointer transition-all hover:brightness-125"
-        onMouseEnter={() => onMuscleHover('lats')}
-        onMouseLeave={() => onMuscleHover(null)}
-      />
-      <path
-        d="M 130 85 Q 140 110, 135 140 L 115 145 L 115 95 Z"
-        fill={`rgba(168, 85, 247, ${getMuscleOpacity('lats')})`}
-        stroke="rgba(255,255,255,0.1)"
-        strokeWidth="1"
-        className="cursor-pointer transition-all hover:brightness-125"
-        onMouseEnter={() => onMuscleHover('lats')}
-        onMouseLeave={() => onMuscleHover(null)}
-      />
+      {/* === LATS (wide V-shape) === */}
+      <path d="M 72 72 Q 65 90, 62 108 Q 60 120, 62 135 L 85 140 L 88 90 Q 82 78, 72 72 Z" {...muscleProps('lats')} filter="url(#glowBack)" />
+      <path d="M 128 72 Q 135 90, 138 108 Q 140 120, 138 135 L 115 140 L 112 90 Q 118 78, 128 72 Z" {...muscleProps('lats')} filter="url(#glowBack)" />
 
-      {/* Triceps */}
-      <ellipse
-        cx="55" cy="120" rx="8" ry="25"
-        fill={`rgba(168, 85, 247, ${getMuscleOpacity('triceps')})`}
-        stroke="rgba(255,255,255,0.1)"
-        strokeWidth="1"
-        className="cursor-pointer transition-all hover:brightness-125"
-        onMouseEnter={() => onMuscleHover('triceps')}
-        onMouseLeave={() => onMuscleHover(null)}
-      />
-      <ellipse
-        cx="145" cy="120" rx="8" ry="25"
-        fill={`rgba(168, 85, 247, ${getMuscleOpacity('triceps')})`}
-        stroke="rgba(255,255,255,0.1)"
-        strokeWidth="1"
-        className="cursor-pointer transition-all hover:brightness-125"
-        onMouseEnter={() => onMuscleHover('triceps')}
-        onMouseLeave={() => onMuscleHover(null)}
-      />
+      {/* === TRICEPS === */}
+      <path d="M 54 98 Q 48 110, 46 130 Q 46 142, 50 148 L 58 145 Q 60 132, 60 118 Q 60 105, 56 98 Z" {...muscleProps('triceps')} />
+      <path d="M 146 98 Q 152 110, 154 130 Q 154 142, 150 148 L 142 145 Q 140 132, 140 118 Q 140 105, 144 98 Z" {...muscleProps('triceps')} />
 
-      {/* Lower Back */}
-      <rect
-        x="85" y="145" width="30" height="30" rx="5"
-        fill="rgba(168, 85, 247, 0.2)"
-        stroke="rgba(255,255,255,0.1)"
-        strokeWidth="1"
-      />
+      {/* === FOREARMS === */}
+      <path d="M 48 150 Q 44 162, 42 180 Q 42 194, 44 200 L 52 198 Q 54 186, 55 172 Q 55 160, 52 150 Z" {...muscleProps('forearms')} />
+      <path d="M 152 150 Q 156 162, 158 180 Q 158 194, 156 200 L 148 198 Q 146 186, 145 172 Q 145 160, 148 150 Z" {...muscleProps('forearms')} />
 
-      {/* Glutes */}
-      <ellipse
-        cx="82" cy="190" rx="15" ry="20"
-        fill={`rgba(168, 85, 247, ${getMuscleOpacity('glutes')})`}
-        stroke="rgba(255,255,255,0.1)"
-        strokeWidth="1"
-        className="cursor-pointer transition-all hover:brightness-125"
-        onMouseEnter={() => onMuscleHover('glutes')}
-        onMouseLeave={() => onMuscleHover(null)}
-      />
-      <ellipse
-        cx="118" cy="190" rx="15" ry="20"
-        fill={`rgba(168, 85, 247, ${getMuscleOpacity('glutes')})`}
-        stroke="rgba(255,255,255,0.1)"
-        strokeWidth="1"
-        className="cursor-pointer transition-all hover:brightness-125"
-        onMouseEnter={() => onMuscleHover('glutes')}
-        onMouseLeave={() => onMuscleHover(null)}
-      />
+      {/* === LOWER BACK / Erectors === */}
+      <path d="M 90 90 L 90 140 Q 95 145, 100 145 Q 105 145, 110 140 L 110 90 Q 105 85, 100 85 Q 95 85, 90 90 Z" fill="rgba(168, 85, 247, 0.15)" stroke="rgba(168,85,247,0.2)" strokeWidth="0.5" />
 
-      {/* Hamstrings */}
-      <rect
-        x="75" y="215" width="15" height="55" rx="7"
-        fill={`rgba(168, 85, 247, ${getMuscleOpacity('hamstrings')})`}
-        stroke="rgba(255,255,255,0.1)"
-        strokeWidth="1"
-        className="cursor-pointer transition-all hover:brightness-125"
-        onMouseEnter={() => onMuscleHover('hamstrings')}
-        onMouseLeave={() => onMuscleHover(null)}
-      />
-      <rect
-        x="110" y="215" width="15" height="55" rx="7"
-        fill={`rgba(168, 85, 247, ${getMuscleOpacity('hamstrings')})`}
-        stroke="rgba(255,255,255,0.1)"
-        strokeWidth="1"
-        className="cursor-pointer transition-all hover:brightness-125"
-        onMouseEnter={() => onMuscleHover('hamstrings')}
-        onMouseLeave={() => onMuscleHover(null)}
-      />
+      {/* === GLUTES === */}
+      <path d="M 78 155 Q 72 168, 72 182 Q 72 195, 78 200 L 98 202 Q 100 185, 98 168 L 88 155 Z" {...muscleProps('glutes')} filter="url(#glowBack)" />
+      <path d="M 122 155 Q 128 168, 128 182 Q 128 195, 122 200 L 102 202 Q 100 185, 102 168 L 112 155 Z" {...muscleProps('glutes')} filter="url(#glowBack)" />
 
-      {/* Body Connection */}
-      <rect x="80" y="55" width="40" height="30" fill="#1e293b" />
-      <rect x="85" y="175" width="30" height="15" fill="#1e293b" />
+      {/* === HAMSTRINGS === */}
+      <path d="M 74 205 Q 70 225, 68 250 Q 68 270, 72 282 L 84 282 Q 88 268, 88 248 Q 88 225, 92 205 Z" {...muscleProps('hamstrings')} filter="url(#glowBack)" />
+      <path d="M 126 205 Q 130 225, 132 250 Q 132 270, 128 282 L 116 282 Q 112 268, 112 248 Q 112 225, 108 205 Z" {...muscleProps('hamstrings')} filter="url(#glowBack)" />
+
+      {/* Knees */}
+      <ellipse cx="78" cy="288" rx="8" ry="6" fill="#1e293b" />
+      <ellipse cx="122" cy="288" rx="8" ry="6" fill="#1e293b" />
+
+      {/* === CALVES (gastrocnemius) === */}
+      <path d="M 70 296 Q 65 310, 64 332 Q 66 358, 70 375 L 80 378 Q 84 358, 85 335 Q 84 312, 82 296 Z" {...muscleProps('calves')} />
+      <path d="M 130 296 Q 135 310, 136 332 Q 134 358, 130 375 L 120 378 Q 116 358, 115 335 Q 116 312, 118 296 Z" {...muscleProps('calves')} />
+
+      {/* Feet */}
+      <ellipse cx="75" cy="386" rx="10" ry="5" fill="#1e293b" />
+      <ellipse cx="125" cy="386" rx="10" ry="5" fill="#1e293b" />
+
+      {/* Hands */}
+      <ellipse cx="46" cy="206" rx="5" ry="7" fill="#1e293b" />
+      <ellipse cx="154" cy="206" rx="5" ry="7" fill="#1e293b" />
     </svg>
   )
 }
-

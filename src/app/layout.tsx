@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ToastProvider } from "@/components/ToastProvider";
 import { WorkoutSessionProvider } from "@/components/workout/WorkoutSessionProvider";
@@ -37,6 +38,7 @@ export default function RootLayout({
             </WorkoutSessionProvider>
           </ToastProvider>
         </ErrorBoundary>
+        <Analytics />
       </body>
     </html>
   );

@@ -193,6 +193,63 @@ For ARM DAY:
 - Alternate: Biceps → Triceps → Biceps → Triceps
 - Include: Curls, Skull Crushers, Cable Work
 
+For PUSH DAY:
+- Start: Bench Press OR Overhead Press (main compound)
+- Middle: Incline Press, Lateral Raises, Dips
+- Finish: Cable Flyes, Tricep Pushdowns
+
+For PULL DAY:
+- Start: Deadlifts OR Barbell Rows (main compound)
+- Middle: Pull-ups, Lat Pulldowns, Face Pulls
+- Finish: Bicep Curls, Rear Delt Flyes
+
+For ARNOLD: CHEST + BACK:
+- Superset style: Bench Press + Barbell Rows
+- Middle: Incline DB Press + Cable Rows
+- Finish: Cable Flyes + Lat Pulldowns
+
+For ARNOLD: ARMS + SHOULDERS:
+- Start: Overhead Press (heavy compound)
+- Middle: Lateral Raises, Barbell Curls, Skull Crushers
+- Finish: Cable Curls, Tricep Pushdowns, Face Pulls
+
+For ARNOLD: LEGS:
+- Same as LEG DAY but can include higher volume
+
+For UPPER BODY:
+- Start: Bench Press + Barbell Rows (2 compounds)
+- Middle: Overhead Press, Pull-ups
+- Finish: Lateral Raises, Curls, Tricep work
+
+For LOWER BODY:
+- Start: Squats + Romanian Deadlifts
+- Middle: Leg Press, Leg Curls
+- Finish: Calf Raises, Leg Extensions
+
+For FULL BODY:
+- 1 push (Bench), 1 pull (Rows), 1 legs (Squats)
+- 1-2 accessories for weak points
+- Keep total to 5-6 exercises max
+
+═══════════════════════════════════════════════════════════════════
+TIME & ENERGY ADJUSTMENTS
+═══════════════════════════════════════════════════════════════════
+
+Adjust the workout based on time available and energy level:
+
+TIME AVAILABLE:
+- 30 min: 3-4 exercises only, supersets allowed, shorter rest
+- 45 min: 4-5 exercises, standard rest
+- 60 min: 5-6 exercises, full rest periods (default)
+- 90 min: 6 exercises, maximum volume, extra sets OK
+
+ENERGY LEVEL (1-10):
+- 1-3 (Low): Reduce intensity (higher RIR: 2-3), lighter loads, fewer sets
+- 4-5 (Below Average): Maintain weight but reduce volume by 1 set per exercise
+- 6-7 (Normal): Standard programming
+- 8-9 (High): Push harder (lower RIR: 0-1), heavier loads
+- 10 (Maximum): PR attempts OK, maximum intensity and volume
+
 ═══════════════════════════════════════════════════════════════════
 EXAMPLE COACH NOTES (Reference These Patterns)
 ═══════════════════════════════════════════════════════════════════
@@ -263,7 +320,7 @@ Now, generate the workout based on the context provided.`;
 /**
  * Build the user context message for the AI
  */
-export function buildContextMessage(context: AIContext): string {
+export function buildContextMessage(context: AIContext, timeAvailable?: number, energyLevel?: number): string {
   const { userProfile, lastTwoWorkouts, personalRecords, requestedWorkoutType } = context;
 
   let message = `WORKOUT REQUEST: ${requestedWorkoutType}\n\n`;
@@ -274,7 +331,14 @@ export function buildContextMessage(context: AIContext): string {
   message += `- Weight: ${userProfile.weight}kg\n`;
   message += `- Training Age: ${userProfile.trainingAge} months\n`;
   message += `- Goals: ${userProfile.trainingGoals.join(', ')}\n`;
-  message += `- Split: ${userProfile.splitPreference}\n\n`;
+  message += `- Split: ${userProfile.splitPreference}\n`;
+  if (timeAvailable) {
+    message += `- Time Available: ${timeAvailable} minutes\n`;
+  }
+  if (energyLevel) {
+    message += `- Energy Level: ${energyLevel}/10\n`;
+  }
+  message += `\n`;
 
   // Last 2 Workouts
   if (lastTwoWorkouts.length > 0) {

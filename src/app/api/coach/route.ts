@@ -22,6 +22,8 @@ import { z } from 'zod';
 
 const RequestSchema = z.object({
   workoutType: z.string().min(1, 'Workout type is required'),
+  timeAvailable: z.number().int().min(15).max(120).optional().default(60),
+  energyLevel: z.number().int().min(1).max(10).optional().default(7),
 });
 
 const ExerciseSchema = z.object({
@@ -144,8 +146,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { workoutType } = validation.data;
-    console.log(`[API /coach] Generating workout: ${workoutType}`);
+    const { workoutType, timeAvailable, energyLevel } = validation.data;
+    console.log(`[API /coach] Generating workout: ${workoutType} (${timeAvailable}min, energy: ${energyLevel}/10)`);
 
     // 4. Build AI context (fetches user data from Supabase)
     let context;
@@ -179,7 +181,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 5. Build prompt message
-    const userMessage = buildContextMessage(context);
+    const userMessage = buildContextMessage(context, timeAvailable, energyLevel);
 
     // 6. Call Gemini AI
     console.log('[API /coach] Calling Gemini AI...');

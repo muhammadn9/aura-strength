@@ -8,7 +8,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Dumbbell, Heart, Zap, Target, Flame, Activity } from 'lucide-react';
+import { Dumbbell, Heart, Zap, Target, Flame, Activity, ArrowUp, ArrowDown, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export type WorkoutType =
@@ -21,7 +21,10 @@ export type WorkoutType =
   | 'Pull Day'
   | 'Upper Body'
   | 'Lower Body'
-  | 'Full Body';
+  | 'Full Body'
+  | 'Arnold: Chest + Back'
+  | 'Arnold: Arms + Shoulders'
+  | 'Arnold: Legs';
 
 interface WorkoutOption {
   type: WorkoutType;
@@ -31,36 +34,7 @@ interface WorkoutOption {
 }
 
 const workoutOptions: WorkoutOption[] = [
-  {
-    type: 'Chest Day',
-    icon: Heart,
-    description: 'Chest, triceps, front delts',
-    color: 'from-purple-500 to-pink-500',
-  },
-  {
-    type: 'Back Day',
-    icon: Activity,
-    description: 'Lats, upper back, biceps',
-    color: 'from-indigo-500 to-purple-500',
-  },
-  {
-    type: 'Leg Day',
-    icon: Zap,
-    description: 'Quads, hamstrings, glutes',
-    color: 'from-violet-500 to-purple-500',
-  },
-  {
-    type: 'Shoulder Day',
-    icon: Target,
-    description: 'Delts, traps, rotator cuff',
-    color: 'from-purple-500 to-indigo-500',
-  },
-  {
-    type: 'Arm Day',
-    icon: Dumbbell,
-    description: 'Biceps, triceps, forearms',
-    color: 'from-fuchsia-500 to-purple-500',
-  },
+  // PPL
   {
     type: 'Push Day',
     icon: Flame,
@@ -74,12 +48,77 @@ const workoutOptions: WorkoutOption[] = [
     color: 'from-indigo-500 to-blue-500',
   },
   {
+    type: 'Leg Day',
+    icon: Zap,
+    description: 'Quads, hamstrings, glutes',
+    color: 'from-violet-500 to-purple-500',
+  },
+  // Arnold Split
+  {
+    type: 'Arnold: Chest + Back',
+    icon: Layers,
+    description: 'Chest & back superset focus',
+    color: 'from-amber-500 to-orange-500',
+  },
+  {
+    type: 'Arnold: Arms + Shoulders',
+    icon: Dumbbell,
+    description: 'Delts, biceps, triceps',
+    color: 'from-orange-500 to-red-500',
+  },
+  {
+    type: 'Arnold: Legs',
+    icon: Zap,
+    description: 'Quads, hamstrings, glutes, calves',
+    color: 'from-red-500 to-pink-500',
+  },
+  // Upper/Lower
+  {
+    type: 'Upper Body',
+    icon: ArrowUp,
+    description: 'Chest, back, shoulders, arms',
+    color: 'from-cyan-500 to-blue-500',
+  },
+  {
+    type: 'Lower Body',
+    icon: ArrowDown,
+    description: 'Quads, hamstrings, glutes, calves',
+    color: 'from-blue-500 to-indigo-500',
+  },
+  // Bro Split
+  {
+    type: 'Chest Day',
+    icon: Heart,
+    description: 'Chest, triceps, front delts',
+    color: 'from-purple-500 to-pink-500',
+  },
+  {
+    type: 'Back Day',
+    icon: Activity,
+    description: 'Lats, upper back, biceps',
+    color: 'from-indigo-500 to-purple-500',
+  },
+  {
+    type: 'Shoulder Day',
+    icon: Target,
+    description: 'Delts, traps, rotator cuff',
+    color: 'from-purple-500 to-indigo-500',
+  },
+  {
+    type: 'Arm Day',
+    icon: Dumbbell,
+    description: 'Biceps, triceps, forearms',
+    color: 'from-fuchsia-500 to-purple-500',
+  },
+  // Full Body
+  {
     type: 'Full Body',
     icon: Zap,
     description: 'Complete full-body workout',
     color: 'from-purple-500 to-violet-500',
   },
 ];
+
 
 interface WorkoutTypeSelectorProps {
   onSelect: (type: WorkoutType) => void;
@@ -188,4 +227,3 @@ export function WorkoutTypeSelector({
     </div>
   );
 }
-

@@ -9,7 +9,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react';
+import { Sparkles, AlertCircle, CheckCircle, ArrowRight, Clock, Battery } from 'lucide-react';
 import { WorkoutTypeSelector, type WorkoutType } from './WorkoutTypeSelector';
 import { ExerciseCard } from './ExerciseCard';
 import { cn } from '@/lib/utils';
@@ -19,9 +19,14 @@ import type { SessionExercise } from '@/types/session';
 
 type GenerationState = 'idle' | 'generating' | 'success' | 'error';
 
+const TIME_OPTIONS = [30, 45, 60, 90] as const;
+type TimeOption = typeof TIME_OPTIONS[number];
+
 export function AISessionGenerator() {
   const [state, setState] = useState<GenerationState>('idle');
   const [selectedType, setSelectedType] = useState<WorkoutType | null>(null);
+  const [timeAvailable, setTimeAvailable] = useState<TimeOption>(60);
+  const [energyLevel, setEnergyLevel] = useState<number>(7);
   const [workout, setWorkout] = useState<AIWorkoutResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [generationTime, setGenerationTime] = useState<number>(0);
@@ -71,7 +76,11 @@ export function AISessionGenerator() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ workoutType: selectedType }),
+        body: JSON.stringify({
+          workoutType: selectedType,
+          timeAvailable,
+          energyLevel,
+        }),
       });
 
       const data = await response.json();
@@ -97,6 +106,13 @@ export function AISessionGenerator() {
     setWorkout(null);
     setError(null);
     setGenerationTime(0);
+  };
+
+  const getEnergyEmoji = (level: number) => {
+    if (level <= 3) return '😴';
+    if (level <= 5) return '😐';
+    if (level <= 7) return '💪';
+    return '🔥';
   };
 
   return (
@@ -137,6 +153,62 @@ export function AISessionGenerator() {
                 selected={selectedType}
                 disabled={false}
               />
+
+              {/* Time & Energy Inputs */}
+              {selectedType && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="max-w-2xl mx-auto space-y-5 px-4"
+                >
+                  {/* Time Available */}
+                  <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-4 md:p-5">
+                    <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-3">
+                      <Clock className="w-4 h-4 text-purple-400" />
+                      Time Available
+                    </label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {TIME_OPTIONS.map((time) => (
+                        <button
+                          key={time}
+                          type="button"
+                          onClick={() => setTimeAvailable(time)}
+                          className={cn(
+                            'px-3 py-2.5 rounded-lg font-medium text-sm transition-all',
+                            timeAvailable === time
+                              ? 'bg-purple-500/20 border border-purple-500 text-white'
+                              : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10'
+                          )}
+                        >
+                          {time} min
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Energy Level */}
+                  <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-4 md:p-5">
+                    <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-3">
+                      <Battery className="w-4 h-4 text-purple-400" />
+                      Energy Level: {energyLevel}/10 {getEnergyEmoji(energyLevel)}
+                    </label>
+                    <input
+                      type="range"
+                      min="1"
+                      max="10"
+                      value={energyLevel}
+                      onChange={(e) => setEnergyLevel(parseInt(e.target.value))}
+                      className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-purple-500"
+                      aria-label="Energy level slider"
+                    />
+                    <div className="flex justify-between text-xs text-slate-500 mt-1">
+                      <span>😴 Exhausted</span>
+                      <span>💪 Good</span>
+                      <span>🔥 Fired Up</span>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
 
               {/* Generate Button */}
               {selectedType && (
