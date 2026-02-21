@@ -3,13 +3,16 @@
 /**
  * Active Workout Session Page
  *
- * Live workout tracking with set logging
+ * Live workout tracking with set logging, PR detection, and end-of-workout summary
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import { useWorkoutSession } from '@/components/workout/WorkoutSessionProvider';
 import AuraBackground from '@/components/aura/AuraBackground';
 import GlassCard from '@/components/aura/GlassCard';
+import PRCelebration from '@/components/workout/PRCelebration';
+import WorkoutSummary, { WorkoutFeedback } from '@/components/workout/WorkoutSummary';
+import { checkForPR, getExercisePRs, PRCheckResult, PRRecord } from '@/lib/utils/pr-detection';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Dumbbell,
@@ -24,8 +27,10 @@ import {
   Volume2,
   VolumeX,
   SkipForward,
+  Trophy,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 
 // Quick feedback tags for sets
 const FEEDBACK_TAGS = [
@@ -39,16 +44,19 @@ const FEEDBACK_TAGS = [
 
 export default function WorkoutSessionPage() {
   const router = useRouter();
+  const supabase = createClient();
   const {
     session,
     isLoading,
+    sessionPRs,
     getCurrentExercise,
     goToNextExercise,
     goToPreviousExercise,
     logSet,
+    addPR,
     pauseSession,
     resumeSession,
-    endSession,
+    endSessionWithFeedback,
   } = useWorkoutSession();
 
   const [weight, setWeight] = useState('');
@@ -64,6 +72,15 @@ export default function WorkoutSessionPage() {
   const [restTimeRemaining, setRestTimeRemaining] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [initialRestTime, setInitialRestTime] = useState(0);
+
+  // PR Detection State
+  const [exercisePRHistory, setExercisePRHistory] = useState<PRRecord[]>([]);
+  const [showPRCelebration, setShowPRCelebration] = useState(false);
+  const [currentPRResult, setCurrentPRResult] = useState<PRCheckResult | null>(null);
+  const [lastLoggedSet, setLastLoggedSet] = useState<{ weight: number; reps: number } | null>(null);
+
+  // Show summary at end of workout
+  const [showSummary, setShowSummary] = useState(false);
 
   const currentExercise = getCurrentExercise();
 
@@ -99,6 +116,26 @@ export default function WorkoutSessionPage() {
       return () => clearTimeout(timer);
     }
   }, [session, isLoading, router]);
+
+  // Fetch PR history when exercise changes
+  useEffect(() => {
+    const fetchPRHistory = async () => {
+      if (!currentExercise || !session) return;
+
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const prHistory = await getExercisePRs(currentExercise.name, user.id);
+        setExercisePRHistory(prHistory);
+      } catch (err) {
+        console.error('Failed to fetch PR history:', err);
+        setExercisePRHistory([]);
+      }
+    };
+
+    fetchPRHistory();
+  }, [currentExercise?.name, session, supabase]);
 
   // Rest Timer Countdown
   useEffect(() => {
@@ -182,14 +219,52 @@ export default function WorkoutSessionPage() {
     setActionError(null);
     try {
       const feedback = buildFeedbackString();
+      const weightNum = parseFloat(weight);
+      const repsNum = parseInt(reps);
+
+      // Check for PR before logging - only if values are valid and positive
+      let prResult: PRCheckResult = { isPR: false, prType: null, previousBest: null, improvement: null };
+      if (
+        Number.isFinite(weightNum) &&
+        Number.isFinite(repsNum) &&
+        weightNum > 0 &&
+        repsNum > 0
+      ) {
+        prResult = checkForPR(weightNum, repsNum, exercisePRHistory);
+      }
 
       await logSet(session.currentExerciseIndex, {
-        weight: parseFloat(weight),
-        reps: parseInt(reps),
+        weight: weightNum,
+        reps: repsNum,
         rir: parseInt(rir),
         completed: true,
         feedback,
+        isPR: prResult.isPR,
+        prType: prResult.prType,
       });
+
+      // If it's a PR, show celebration and track it
+      if (prResult.isPR && prResult.prType) {
+        setCurrentPRResult(prResult);
+        setLastLoggedSet({ weight: weightNum, reps: repsNum });
+        setShowPRCelebration(true);
+
+        // Add to session PRs
+        addPR({
+          exerciseName: currentExercise.name,
+          weight: weightNum,
+          reps: repsNum,
+          prType: prResult.prType,
+        });
+
+        // Add to local PR history for subsequent PR checks
+        setExercisePRHistory(prev => [...prev, {
+          exerciseName: currentExercise.name,
+          weight: weightNum,
+          reps: repsNum,
+          dateAchieved: new Date().toISOString().split('T')[0],
+        }]);
+      }
 
       // Clear inputs
       setWeight('');
@@ -198,10 +273,10 @@ export default function WorkoutSessionPage() {
       setSelectedTags([]);
       setFeedbackNote('');
 
-      // Start rest timer if there are more sets to do
+      // Start rest timer if there are more sets to do (and not showing PR celebration)
       const newCompletedSets = (currentExercise?.completedSets.length || 0) + 1;
       const targetSetsCount = currentExercise?.targetSets || 0;
-      if (newCompletedSets < targetSetsCount && currentExercise?.restSeconds) {
+      if (newCompletedSets < targetSetsCount && currentExercise?.restSeconds && !prResult.isPR) {
         startRestTimer(currentExercise.restSeconds);
       }
     } catch (err) {
@@ -210,10 +285,29 @@ export default function WorkoutSessionPage() {
     }
   };
 
+  // Handle closing PR celebration
+  const handleClosePRCelebration = () => {
+    setShowPRCelebration(false);
+    setCurrentPRResult(null);
+    setLastLoggedSet(null);
+
+    // Start rest timer after celebration if needed
+    const newCompletedSets = currentExercise?.completedSets.length || 0;
+    const targetSetsCount = currentExercise?.targetSets || 0;
+    if (newCompletedSets < targetSetsCount && currentExercise?.restSeconds) {
+      startRestTimer(currentExercise.restSeconds);
+    }
+  };
+
   const handleEndWorkout = async () => {
+    // Show the summary screen instead of immediately ending
+    setShowSummary(true);
+  };
+
+  const handleSummaryComplete = async (feedback: WorkoutFeedback) => {
     setActionError(null);
     try {
-      await endSession();
+      await endSessionWithFeedback(feedback);
     } catch (err) {
       console.error('Failed to end workout:', err);
       setActionError('Failed to save workout. Please try again.');
@@ -498,10 +592,22 @@ export default function WorkoutSessionPage() {
                       {currentExercise.completedSets.map((set, idx) => (
                         <div
                           key={idx}
-                          className="p-3 bg-white/5 rounded-lg"
+                          className={`p-3 rounded-lg ${
+                            set.isPR 
+                              ? 'bg-gradient-to-r from-yellow-500/10 to-amber-500/10 border border-yellow-500/30' 
+                              : 'bg-white/5'
+                          }`}
                         >
                           <div className="flex items-center justify-between">
-                            <span className="text-slate-400">Set {set.setNumber}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-slate-400">Set {set.setNumber}</span>
+                              {set.isPR && (
+                                <span className="flex items-center gap-1 px-2 py-0.5 bg-yellow-500/20 rounded-full text-xs text-yellow-400 font-medium">
+                                  <Trophy className="w-3 h-3" />
+                                  PR
+                                </span>
+                              )}
+                            </div>
                             <div className="flex gap-4 text-white">
                               <span>{set.weight}kg</span>
                               <span>{set.reps} reps</span>
@@ -588,6 +694,30 @@ export default function WorkoutSessionPage() {
                 </button>
               </div>
             </GlassCard>
+          </div>
+        )}
+
+        {/* PR Celebration Modal */}
+        {showPRCelebration && currentPRResult && lastLoggedSet && currentExercise && (
+          <PRCelebration
+            prResult={currentPRResult}
+            exerciseName={currentExercise.name}
+            weight={lastLoggedSet.weight}
+            reps={lastLoggedSet.reps}
+            onClose={handleClosePRCelebration}
+          />
+        )}
+
+        {/* Workout Summary Modal */}
+        {showSummary && (
+          <div className="fixed inset-0 z-50">
+            <AuraBackground />
+            <WorkoutSummary
+              session={session}
+              prsAchieved={sessionPRs}
+              onComplete={handleSummaryComplete}
+              isLoading={isLoading}
+            />
           </div>
         )}
       </div>
