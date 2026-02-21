@@ -6,7 +6,9 @@ import { createClient } from '@/lib/supabase/client'
 import AuraBackground from '@/components/aura/AuraBackground'
 import GlassCard from '@/components/aura/GlassCard'
 import { motion } from 'framer-motion'
-import { Loader2, User, Ruler, Weight, Calendar, Target, Dumbbell } from 'lucide-react'
+import { Loader2, User, Ruler, Weight, Calendar, Target, Dumbbell, Globe } from 'lucide-react'
+import type { UnitPreference } from '@/lib/utils/unit-conversion'
+import { lbsToKg, ftInToCm } from '@/lib/utils/unit-conversion'
 
 export default function ProfileSetupPage() {
   const router = useRouter()
@@ -16,10 +18,13 @@ export default function ProfileSetupPage() {
   const [formData, setFormData] = useState({
     age: '',
     height: '',
+    height_feet: '',
+    height_inches: '',
     weight: '',
     training_age: '',
     split_preference: 'ppl',
     training_goals: [] as string[],
+    unit_preference: 'metric' as UnitPreference,
   })
 
   const splitOptions = [
@@ -27,6 +32,7 @@ export default function ProfileSetupPage() {
     { value: 'upper-lower', label: 'Upper/Lower (4x/week)' },
     { value: 'full-body', label: 'Full Body (3x/week)' },
     { value: 'bro-split', label: 'Bro Split (5x/week)' },
+    { value: 'arnold', label: 'Arnold Split (6x/week)' },
   ]
 
   const goalOptions = [
@@ -60,17 +66,27 @@ export default function ProfileSetupPage() {
         return
       }
 
+      // Convert to metric for storage
+      const isImperial = formData.unit_preference === 'imperial';
+      const heightCm = isImperial
+        ? ftInToCm(parseInt(formData.height_feet) || 0, parseInt(formData.height_inches) || 0)
+        : parseFloat(formData.height);
+      const weightKg = isImperial
+        ? lbsToKg(parseFloat(formData.weight))
+        : parseFloat(formData.weight);
+
       // Use upsert to handle both insert and update cases
       const { error: upsertError } = await supabase
         .from('profiles')
         .upsert({
           user_id: user.id,
           age: parseInt(formData.age),
-          height: parseFloat(formData.height),
-          weight: parseFloat(formData.weight),
+          height: heightCm,
+          weight: weightKg,
           training_age: parseInt(formData.training_age),
           split_preference: formData.split_preference,
           training_goals: formData.training_goals,
+          unit_preference: formData.unit_preference,
           updated_at: new Date().toISOString(),
         }, {
           onConflict: 'user_id' // Update if user_id already exists
@@ -110,6 +126,30 @@ export default function ProfileSetupPage() {
 
           <GlassCard>
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Unit Preference Toggle */}
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-3">
+                  <Globe className="w-4 h-4" />
+                  Unit System
+                </label>
+                <div className="flex gap-3">
+                  {(['metric', 'imperial'] as const).map((unit) => (
+                    <button
+                      key={unit}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, unit_preference: unit })}
+                      className={`flex-1 px-4 py-3 rounded-lg font-medium text-sm transition-all ${
+                        formData.unit_preference === unit
+                          ? 'bg-purple-500/20 border border-purple-500 text-white'
+                          : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10'
+                      }`}
+                    >
+                      {unit === 'metric' ? '🌍 Metric (kg, cm)' : '🇺🇸 Imperial (lb, ft/in)'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Personal Info */}
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
@@ -129,39 +169,72 @@ export default function ProfileSetupPage() {
                   />
                 </div>
 
-                <div>
-                  <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-2">
-                    <Ruler className="w-4 h-4" />
-                    Height (cm)
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min="100"
-                    max="250"
-                    step="0.1"
-                    value={formData.height}
-                    onChange={(e) => setFormData({ ...formData, height: e.target.value })}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20"
-                    placeholder="175"
-                  />
-                </div>
+                {formData.unit_preference === 'metric' ? (
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-2">
+                      <Ruler className="w-4 h-4" />
+                      Height (cm)
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="100"
+                      max="250"
+                      step="0.1"
+                      value={formData.height}
+                      onChange={(e) => setFormData({ ...formData, height: e.target.value })}
+                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20"
+                      placeholder="175"
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-2">
+                      <Ruler className="w-4 h-4" />
+                      Height (ft / in)
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        required
+                        min="3"
+                        max="8"
+                        value={formData.height_feet}
+                        onChange={(e) => setFormData({ ...formData, height_feet: e.target.value })}
+                        className="w-1/2 px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20"
+                        placeholder="5"
+                        aria-label="Height feet"
+                      />
+                      <input
+                        type="number"
+                        required
+                        min="0"
+                        max="11"
+                        value={formData.height_inches}
+                        onChange={(e) => setFormData({ ...formData, height_inches: e.target.value })}
+                        className="w-1/2 px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20"
+                        placeholder="10"
+                        aria-label="Height inches"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-2">
                     <Weight className="w-4 h-4" />
-                    Weight (kg)
+                    Weight ({formData.unit_preference === 'imperial' ? 'lb' : 'kg'})
                   </label>
                   <input
                     type="number"
                     required
-                    min="30"
-                    max="300"
+                    min={formData.unit_preference === 'imperial' ? '66' : '30'}
+                    max={formData.unit_preference === 'imperial' ? '660' : '300'}
                     step="0.1"
                     value={formData.weight}
                     onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
                     className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20"
-                    placeholder="75"
+                    placeholder={formData.unit_preference === 'imperial' ? '165' : '75'}
                   />
                 </div>
 

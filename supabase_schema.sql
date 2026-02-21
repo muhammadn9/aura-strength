@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   training_age INTEGER, -- months of training
   training_goals TEXT[],
   split_preference TEXT, -- e.g., 'PPL', 'Upper/Lower'
+  unit_preference TEXT DEFAULT 'metric', -- 'metric' or 'imperial'
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
