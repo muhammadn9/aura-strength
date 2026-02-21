@@ -103,18 +103,21 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
   }, []);
 
   // Auth state change listener & periodic token refresh during long workouts
-  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const refreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
+
   useEffect(() => {
     // Listen for auth state changes (e.g., token refresh, sign out)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_OUT' && session) {
+      if (event === 'SIGNED_OUT' && sessionRef.current) {
         console.warn('User signed out during active workout session');
         setError('Your session has expired. Please sign in again to save your workout.');
       }
     });
 
     // Periodic token refresh during active workout
-    if (session && session.status === 'active') {
+    if (session?.status === 'active') {
       refreshIntervalRef.current = setInterval(async () => {
         try {
           await supabase.auth.getSession();
@@ -131,7 +134,7 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
         refreshIntervalRef.current = null;
       }
     };
-  }, [session?.status, session, supabase.auth]);
+  }, [session?.status, supabase.auth]);
 
   const startSession = useCallback(async (workoutType: string, exercises: SessionExercise[]) => {
     setIsLoading(true);
