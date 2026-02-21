@@ -222,8 +222,16 @@ export default function WorkoutSessionPage() {
       const weightNum = parseFloat(weight);
       const repsNum = parseInt(reps);
 
-      // Check for PR before logging
-      const prResult = checkForPR(weightNum, repsNum, exercisePRHistory);
+      // Check for PR before logging - only if values are valid and positive
+      let prResult: PRCheckResult = { isPR: false, prType: null, previousBest: null, improvement: null };
+      if (
+        Number.isFinite(weightNum) &&
+        Number.isFinite(repsNum) &&
+        weightNum > 0 &&
+        repsNum > 0
+      ) {
+        prResult = checkForPR(weightNum, repsNum, exercisePRHistory);
+      }
 
       await logSet(session.currentExerciseIndex, {
         weight: weightNum,

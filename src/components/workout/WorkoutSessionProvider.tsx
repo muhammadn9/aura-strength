@@ -234,14 +234,27 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
     // Build the overall feedback string from structured feedback
     const feedbackParts: string[] = [];
 
-    const jointLabels = ['Very Sore', 'Some Pain', 'Okay', 'Good', 'Great'];
-    const energyLabels = ['Exhausted', 'Tired', 'Moderate', 'Energized', 'Pumped'];
+    // Use shared labels from WorkoutSummary options
+    const jointLabels: Record<number, string> = {
+      1: 'Very Sore',
+      2: 'Some Pain',
+      3: 'Okay',
+      4: 'Good',
+      5: 'Great',
+    };
+    const energyLabels: Record<number, string> = {
+      1: 'Exhausted',
+      2: 'Tired',
+      3: 'Moderate',
+      4: 'Energized',
+      5: 'Pumped',
+    };
 
-    feedbackParts.push(`Joint Health: ${jointLabels[feedback.jointHealth - 1]} (${feedback.jointHealth}/5)`);
+    feedbackParts.push(`Joint Health: ${jointLabels[feedback.jointHealth] || 'Unknown'} (${feedback.jointHealth}/5)`);
     if (feedback.jointNotes) {
       feedbackParts.push(`Joint Notes: ${feedback.jointNotes}`);
     }
-    feedbackParts.push(`Energy Level: ${energyLabels[feedback.energyLevel - 1]} (${feedback.energyLevel}/5)`);
+    feedbackParts.push(`Energy Level: ${energyLabels[feedback.energyLevel] || 'Unknown'} (${feedback.energyLevel}/5)`);
     if (feedback.overallNotes) {
       feedbackParts.push(`Notes: ${feedback.overallNotes}`);
     }

@@ -88,7 +88,7 @@ export default function WorkoutSummary({
 
     session.exercises.forEach(exercise => {
       exercise.completedSets.forEach((set: SessionSet) => {
-        if (set.completed && set.weight && set.reps) {
+        if (set.completed && set.weight !== null && set.reps !== null) {
           totalSets++;
           totalReps += set.reps;
           totalVolume += set.weight * set.reps;
@@ -254,6 +254,7 @@ export default function WorkoutSummary({
                     <button
                       key={option.value}
                       onClick={() => setJointHealth(option.value)}
+                      aria-label={`Rate joint health as ${option.label} (${option.value} out of 5)`}
                       className={`flex flex-col items-center p-3 rounded-xl transition ${
                         jointHealth === option.value
                           ? 'bg-purple-500/30 border border-purple-500'
@@ -295,6 +296,7 @@ export default function WorkoutSummary({
                     <button
                       key={option.value}
                       onClick={() => setEnergyLevel(option.value)}
+                      aria-label={`Rate energy level as ${option.label} (${option.value} out of 5)`}
                       className={`flex flex-col items-center p-3 rounded-xl transition ${
                         energyLevel === option.value
                           ? 'bg-purple-500/30 border border-purple-500'

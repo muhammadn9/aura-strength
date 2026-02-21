@@ -82,6 +82,9 @@ export async function getExercisePRs(
 
   // Add current PRs (filter by user and exercise name)
   if (currentSets) {
+    // Normalize exercise name for comparison
+    const normalizedExerciseName = exerciseName.trim().toLowerCase();
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     currentSets.forEach((set: any) => {
       // Handle nested relations which might be arrays from Supabase
@@ -89,9 +92,12 @@ export async function getExercisePRs(
       const workout = exercise?.workout;
       const workoutData = Array.isArray(workout) ? workout[0] : workout;
 
+      // Normalize the exercise name from the database for comparison
+      const dbExerciseName = exercise?.name?.trim().toLowerCase();
+
       if (
         workoutData?.user_id === userId &&
-        exercise?.name?.toLowerCase() === exerciseName.toLowerCase()
+        dbExerciseName === normalizedExerciseName
       ) {
         prs.push({
           exerciseName: exercise.name,
@@ -135,7 +141,7 @@ export function checkForPR(
     pr => pr.weight * pr.reps === bestVolume
   );
 
-  // Find best reps at this weight or higher
+  // Find best reps at this specific weight
   const bestRepsAtWeight = previousPRs
     .filter(pr => pr.weight === weight)
     .reduce((max, pr) => Math.max(max, pr.reps), 0);
@@ -163,8 +169,8 @@ export function checkForPR(
     };
   }
 
-  // Check for rep PR at this weight
-  if (weight === bestWeight && reps > bestRepsAtWeight) {
+  // Check for rep PR at this weight (if user has done this weight before)
+  if (bestRepsAtWeight > 0 && reps > bestRepsAtWeight) {
     const improvement = `+${reps - bestRepsAtWeight} more reps at ${weight}kg!`;
     return {
       isPR: true,
