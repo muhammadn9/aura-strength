@@ -22,7 +22,6 @@ import {
   X,
   ChevronLeft,
   Dumbbell,
-  Clock,
   TrendingUp,
 } from 'lucide-react';
 
@@ -72,7 +71,6 @@ const WORKOUT_TYPES = [
 
 export default function HistoryPage() {
   const router = useRouter();
-  const supabase = createClient();
 
   const [workouts, setWorkouts] = useState<WorkoutSummary[]>([]);
   const [selectedWorkout, setSelectedWorkout] = useState<WorkoutDetailData | null>(null);
@@ -87,6 +85,7 @@ export default function HistoryPage() {
   // Fetch workouts
   useEffect(() => {
     const fetchWorkouts = async () => {
+      const supabase = createClient();
       setIsLoading(true);
       setError(null);
 
@@ -151,10 +150,11 @@ export default function HistoryPage() {
     };
 
     fetchWorkouts();
-  }, [supabase, router]);
+  }, [router]);
 
   // Fetch workout detail
   const fetchWorkoutDetail = async (workoutId: string) => {
+    const supabase = createClient();
     try {
       const { data, error: fetchError } = await supabase
         .from('workouts')

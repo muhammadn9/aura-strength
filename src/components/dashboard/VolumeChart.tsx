@@ -17,10 +17,9 @@ export default function VolumeChart() {
   const [volumeData, setVolumeData] = useState<VolumeByWeek[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const supabase = createClient();
-
   useEffect(() => {
     const fetchVolumeData = async () => {
+      const supabase = createClient();
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
@@ -35,7 +34,7 @@ export default function VolumeChart() {
     };
 
     fetchVolumeData();
-  }, [supabase]);
+  }, []);
 
   if (isLoading) {
     return (

@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { getMuscleVolumeData, VolumeByMuscle } from '@/lib/utils/muscle-volume'
+import { getMuscleVolumeData } from '@/lib/utils/muscle-volume'
 
 interface MuscleGroup {
   id: string
@@ -36,11 +36,10 @@ export default function MuscleHeatmap() {
   const [muscleData, setMuscleData] = useState<MuscleGroup[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  const supabase = createClient()
-
   // Fetch real volume data
   useEffect(() => {
     const fetchVolumeData = async () => {
+      const supabase = createClient()
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) {
@@ -68,7 +67,7 @@ export default function MuscleHeatmap() {
     }
 
     fetchVolumeData()
-  }, [supabase])
+  }, [])
 
   const getMuscleOpacity = (muscleId: string) => {
     const muscle = muscleData.find(m => m.id === muscleId)

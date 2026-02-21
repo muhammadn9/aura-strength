@@ -24,15 +24,14 @@ const THRESHOLD = 30;
 
 export default function CycleWarning() {
   const router = useRouter();
-  const supabase = createClient();
 
   const [workoutCount, setWorkoutCount] = useState(0);
   const [showWarning, setShowWarning] = useState(false);
-  const [showBadge, setShowBadge] = useState(false);
   const [isDismissed, setIsDismissed] = useState(true);
 
   useEffect(() => {
     const checkWorkoutCount = async () => {
+      const supabase = createClient();
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
@@ -46,14 +45,13 @@ export default function CycleWarning() {
         const isStillDismissed = dismissedUntil > Date.now();
 
         setIsDismissed(isStillDismissed);
-        setShowBadge(count >= THRESHOLD && !isStillDismissed);
       } catch (error) {
         console.error('Failed to check workout count:', error);
       }
     };
 
     checkWorkoutCount();
-  }, [supabase]);
+  }, []);
 
   const handleDismiss = () => {
     // Dismiss for 7 days
@@ -61,7 +59,6 @@ export default function CycleWarning() {
     localStorage.setItem(DISMISS_KEY, dismissUntil.toString());
     setIsDismissed(true);
     setShowWarning(false);
-    setShowBadge(false);
   };
 
   const handleGoToExport = () => {
@@ -130,6 +127,8 @@ export default function CycleWarning() {
                   <button
                     onClick={() => setShowWarning(false)}
                     className="p-2 text-slate-400 hover:text-white transition"
+                    aria-label="Close warning dialog"
+                    type="button"
                   >
                     <X className="w-5 h-5" />
                   </button>

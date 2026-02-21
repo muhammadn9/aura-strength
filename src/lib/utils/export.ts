@@ -128,6 +128,21 @@ export function convertToCSV(data: ExportWorkoutData[]): string {
     return '';
   }
 
+  // Helper to properly escape CSV fields
+  const escapeCsvField = (
+    value: string | number | boolean | null | undefined
+  ): string => {
+    if (value === null || value === undefined) {
+      return '';
+    }
+
+    const str = String(value);
+    const escaped = str.replace(/"/g, '""');
+    const needsQuotes = /[",\n\r]/.test(escaped);
+
+    return needsQuotes ? `"${escaped}"` : escaped;
+  };
+
   const headers = [
     'Date',
     'Workout Type',
@@ -141,15 +156,15 @@ export function convertToCSV(data: ExportWorkoutData[]): string {
   ];
 
   const rows = data.map(row => [
-    row.date,
-    row.workoutType,
-    row.exerciseName,
-    row.setNumber.toString(),
-    row.weight.toString(),
-    row.reps.toString(),
-    row.rir.toString(),
-    row.feedback ? `"${row.feedback.replace(/"/g, '""')}"` : '',
-    row.isPR ? 'Yes' : '',
+    escapeCsvField(row.date),
+    escapeCsvField(row.workoutType),
+    escapeCsvField(row.exerciseName),
+    escapeCsvField(row.setNumber),
+    escapeCsvField(row.weight),
+    escapeCsvField(row.reps),
+    escapeCsvField(row.rir),
+    escapeCsvField(row.feedback),
+    escapeCsvField(row.isPR ? 'Yes' : ''),
   ]);
 
   const csvContent = [
@@ -291,7 +306,7 @@ export async function archiveAndClearWorkouts(
             .insert(prsToArchive);
 
           if (archiveError) {
-            console.warn('Some PRs may not have been archived:', archiveError);
+            throw new Error(`Failed to archive PRs: ${archiveError.message}`);
           }
         }
       }

@@ -138,7 +138,11 @@ export default function WorkoutCalendar({ workoutsByDate, onSelectDate }: Workou
       {/* Calendar Grid */}
       <div className="grid grid-cols-7 gap-1">
         {calendarDays.map((day, index) => {
-          const dateStr = day.date.toISOString().split('T')[0];
+          // Use local date string instead of UTC to avoid timezone issues
+          const year = day.date.getFullYear();
+          const month = String(day.date.getMonth() + 1).padStart(2, '0');
+          const date = String(day.date.getDate()).padStart(2, '0');
+          const dateStr = `${year}-${month}-${date}`;
           const hasWorkout = workoutsByDate[dateStr] && workoutsByDate[dateStr].length > 0;
           const isToday = day.date.getTime() === today.getTime();
 

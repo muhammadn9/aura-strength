@@ -14,7 +14,6 @@ import GlassCard from '@/components/aura/GlassCard';
 import {
   Download,
   Archive,
-  Trash2,
   X,
   AlertTriangle,
   Check,
@@ -70,8 +69,11 @@ export default function ExportButton({ workoutCount }: ExportButtonProps) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // First export
-      await exportWorkoutsToCSV(user.id);
+      // First export - abort if export fails
+      const exportResult = await exportWorkoutsToCSV(user.id);
+      if (!exportResult.success) {
+        throw new Error(exportResult.error || 'Export failed; archive aborted');
+      }
 
       // Then archive and clear
       const result = await archiveAndClearWorkouts(user.id, true);
@@ -130,6 +132,8 @@ export default function ExportButton({ workoutCount }: ExportButtonProps) {
                   <button
                     onClick={() => setShowModal(false)}
                     className="p-2 text-slate-400 hover:text-white transition"
+                    aria-label="Close export dialog"
+                    type="button"
                   >
                     <X className="w-5 h-5" />
                   </button>

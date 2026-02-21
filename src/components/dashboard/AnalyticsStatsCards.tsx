@@ -23,10 +23,9 @@ export default function AnalyticsStatsCards() {
   const [stats, setStats] = useState<WorkoutStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const supabase = createClient();
-
   useEffect(() => {
     const fetchStats = async () => {
+      const supabase = createClient();
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
@@ -41,7 +40,7 @@ export default function AnalyticsStatsCards() {
     };
 
     fetchStats();
-  }, [supabase]);
+  }, []);
 
   if (isLoading) {
     return (
