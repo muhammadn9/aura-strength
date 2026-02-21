@@ -10,17 +10,28 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { WorkoutSession, SessionExercise, SessionSet } from '@/types/session';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { WorkoutFeedback } from '@/components/workout/WorkoutSummary';
+
+// PR info for tracking across session
+export interface SessionPR {
+  exerciseName: string;
+  weight: number;
+  reps: number;
+  prType: 'weight' | 'volume' | 'reps';
+}
 
 interface WorkoutSessionContextType {
   session: WorkoutSession | null;
   isLoading: boolean;
   error: string | null;
+  sessionPRs: SessionPR[];
 
   // Session management
   startSession: (workoutType: string, exercises: SessionExercise[]) => Promise<void>;
   pauseSession: () => void;
   resumeSession: () => void;
   endSession: (overallFeedback?: string) => Promise<void>;
+  endSessionWithFeedback: (feedback: WorkoutFeedback) => Promise<void>;
 
   // Exercise navigation
   goToNextExercise: () => void;
@@ -29,6 +40,7 @@ interface WorkoutSessionContextType {
 
   // Set logging
   logSet: (exerciseIndex: number, setData: Partial<SessionSet>) => Promise<void>;
+  addPR: (pr: SessionPR) => void;
   getCurrentExercise: () => SessionExercise | null;
   getCurrentSet: () => SessionSet | null;
 }
@@ -39,6 +51,7 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
   const [session, setSession] = useState<WorkoutSession | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sessionPRs, setSessionPRs] = useState<SessionPR[]>([]);
   const router = useRouter();
   const supabase = createClient();
 
@@ -169,7 +182,7 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
               reps: set.reps!,
               rir: set.rir!,
               user_set_feedback: set.feedback || null,
-              is_pr: false, // TODO: Calculate PR in future PR
+              is_pr: set.isPR || false,
             }));
 
           if (setsToInsert.length > 0) {
@@ -182,8 +195,29 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
         }
       }
 
-      // Clear session
+      // Save PRs to all_time_prs table
+      if (sessionPRs.length > 0) {
+        const prsToInsert = sessionPRs.map(pr => ({
+          user_id: user.id,
+          exercise_name: pr.exerciseName,
+          weight: pr.weight,
+          reps: pr.reps,
+          date_achieved: formattedDate,
+        }));
+
+        const { error: prError } = await supabase
+          .from('all_time_prs')
+          .insert(prsToInsert);
+
+        if (prError) {
+          console.error('Failed to save PRs:', prError);
+          // Don't throw - PRs are bonus tracking, don't fail the whole save
+        }
+      }
+
+      // Clear session and PRs
       setSession(null);
+      setSessionPRs([]);
       localStorage.removeItem('activeWorkoutSession');
       router.push('/dashboard');
     } catch (err) {
@@ -193,7 +227,32 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
     } finally {
       setIsLoading(false);
     }
-  }, [session, supabase, router]);
+  }, [session, sessionPRs, supabase, router]);
+
+  // Enhanced end session with full feedback
+  const endSessionWithFeedback = useCallback(async (feedback: WorkoutFeedback) => {
+    // Build the overall feedback string from structured feedback
+    const feedbackParts: string[] = [];
+
+    const jointLabels = ['Very Sore', 'Some Pain', 'Okay', 'Good', 'Great'];
+    const energyLabels = ['Exhausted', 'Tired', 'Moderate', 'Energized', 'Pumped'];
+
+    feedbackParts.push(`Joint Health: ${jointLabels[feedback.jointHealth - 1]} (${feedback.jointHealth}/5)`);
+    if (feedback.jointNotes) {
+      feedbackParts.push(`Joint Notes: ${feedback.jointNotes}`);
+    }
+    feedbackParts.push(`Energy Level: ${energyLabels[feedback.energyLevel - 1]} (${feedback.energyLevel}/5)`);
+    if (feedback.overallNotes) {
+      feedbackParts.push(`Notes: ${feedback.overallNotes}`);
+    }
+
+    await endSession(feedbackParts.join(' | '));
+  }, [endSession]);
+
+  // Add a PR to the session tracking
+  const addPR = useCallback((pr: SessionPR) => {
+    setSessionPRs(prev => [...prev, pr]);
+  }, []);
 
   const goToNextExercise = useCallback(() => {
     setSession(prev => {
@@ -247,6 +306,8 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
         completed: setData.completed ?? true,
         timestamp: new Date(),
         feedback: setData.feedback,
+        isPR: setData.isPR,
+        prType: setData.prType,
       };
 
       exercise.completedSets.push(newSet);
@@ -275,14 +336,17 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
     session,
     isLoading,
     error,
+    sessionPRs,
     startSession,
     pauseSession,
     resumeSession,
     endSession,
+    endSessionWithFeedback,
     goToNextExercise,
     goToPreviousExercise,
     setCurrentExercise,
     logSet,
+    addPR,
     getCurrentExercise,
     getCurrentSet,
   };

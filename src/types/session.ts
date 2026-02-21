@@ -25,6 +25,8 @@ export interface SessionSet {
   completed: boolean;
   timestamp: Date;
   feedback?: string;
+  isPR?: boolean;
+  prType?: 'weight' | 'volume' | 'reps' | null;
 }
 
 export interface WorkoutSession {
