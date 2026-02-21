@@ -6,11 +6,16 @@
  * Manages active workout session state and auto-save
  */
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { WorkoutSession, SessionExercise, SessionSet } from '@/types/session';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { WorkoutFeedback } from '@/components/workout/WorkoutSummary';
+
+// Maximum session age before it's considered stale (4 hours)
+const MAX_SESSION_AGE_MS = 4 * 60 * 60 * 1000;
+// Auth token refresh interval (10 minutes)
+const TOKEN_REFRESH_INTERVAL_MS = 10 * 60 * 1000;
 
 // PR info for tracking across session
 export interface SessionPR {
@@ -55,21 +60,31 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
   const router = useRouter();
   const supabase = createClient();
 
-  // Auto-save session to localStorage on every change
+  // Auto-save session to localStorage on every change (with savedAt timestamp)
   useEffect(() => {
     if (session) {
-      localStorage.setItem('activeWorkoutSession', JSON.stringify(session));
+      const payload = { ...session, savedAt: Date.now() };
+      localStorage.setItem('activeWorkoutSession', JSON.stringify(payload));
     } else {
       localStorage.removeItem('activeWorkoutSession');
     }
   }, [session]);
 
-  // Load session from localStorage on mount
+  // Load session from localStorage on mount (with expiration check)
   useEffect(() => {
     const savedSession = localStorage.getItem('activeWorkoutSession');
     if (savedSession) {
       try {
         const parsed = JSON.parse(savedSession);
+
+        // Check if session is stale (older than MAX_SESSION_AGE_MS)
+        const savedAt = parsed.savedAt || new Date(parsed.startTime).getTime();
+        if (Date.now() - savedAt > MAX_SESSION_AGE_MS) {
+          console.warn('Discarding stale workout session (older than 4 hours)');
+          localStorage.removeItem('activeWorkoutSession');
+          return;
+        }
+
         // Convert date strings back to Date objects
         parsed.startTime = new Date(parsed.startTime);
         parsed.exercises.forEach((ex: SessionExercise) => {
@@ -77,6 +92,8 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
             set.timestamp = new Date(set.timestamp);
           });
         });
+        // Remove the savedAt field before setting state
+        delete parsed.savedAt;
         setSession(parsed);
       } catch (err) {
         console.error('Failed to load saved session:', err);
@@ -84,6 +101,40 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
       }
     }
   }, []);
+
+  // Auth state change listener & periodic token refresh during long workouts
+  const refreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
+
+  useEffect(() => {
+    // Listen for auth state changes (e.g., token refresh, sign out)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT' && sessionRef.current) {
+        console.warn('User signed out during active workout session');
+        setError('Your session has expired. Please sign in again to save your workout.');
+      }
+    });
+
+    // Periodic token refresh during active workout
+    if (session?.status === 'active') {
+      refreshIntervalRef.current = setInterval(async () => {
+        try {
+          await supabase.auth.getSession();
+        } catch (err) {
+          console.error('Failed to refresh auth token:', err);
+        }
+      }, TOKEN_REFRESH_INTERVAL_MS);
+    }
+
+    return () => {
+      subscription.unsubscribe();
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+        refreshIntervalRef.current = null;
+      }
+    };
+  }, [session?.status, supabase.auth]);
 
   const startSession = useCallback(async (workoutType: string, exercises: SessionExercise[]) => {
     setIsLoading(true);
@@ -378,4 +429,3 @@ export function useWorkoutSession() {
   }
   return context;
 }
-
