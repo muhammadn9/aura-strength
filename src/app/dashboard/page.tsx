@@ -3,7 +3,11 @@ import { redirect } from 'next/navigation'
 import AuraBackground from '@/components/aura/AuraBackground'
 import GlassCard from '@/components/aura/GlassCard'
 import MuscleHeatmap from '@/components/aura/MuscleHeatmap'
-import { Dumbbell, TrendingUp, Calendar, LogOut } from 'lucide-react'
+import CycleWarning from '@/components/dashboard/CycleWarning'
+import AnalyticsStatsCards from '@/components/dashboard/AnalyticsStatsCards'
+import ImprovementsCard from '@/components/dashboard/ImprovementsCard'
+import VolumeChart from '@/components/dashboard/VolumeChart'
+import { Dumbbell, TrendingUp, Calendar, LogOut, History, BarChart3 } from 'lucide-react'
 import Link from 'next/link'
 
 export default async function DashboardPage() {
@@ -41,44 +45,11 @@ export default async function DashboardPage() {
             </form>
           </div>
 
-          {/* Quick Stats */}
-          <div className="grid md:grid-cols-3 gap-4">
-            <GlassCard>
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                  <Dumbbell className="w-6 h-6 text-purple-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-slate-400">Total Workouts</p>
-                  <p className="text-2xl font-bold text-white">0</p>
-                </div>
-              </div>
-            </GlassCard>
+          {/* 30-Workout Cycle Warning */}
+          <CycleWarning />
 
-            <GlassCard>
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-indigo-500/20 rounded-lg flex items-center justify-center">
-                  <TrendingUp className="w-6 h-6 text-indigo-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-slate-400">Personal Records</p>
-                  <p className="text-2xl font-bold text-white">0</p>
-                </div>
-              </div>
-            </GlassCard>
-
-            <GlassCard>
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                  <Calendar className="w-6 h-6 text-purple-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-slate-400">This Week</p>
-                  <p className="text-2xl font-bold text-white">0 sessions</p>
-                </div>
-              </div>
-            </GlassCard>
-          </div>
+          {/* Analytics Stats */}
+          <AnalyticsStatsCards />
 
           {/* Main Content Grid */}
           <div className="grid lg:grid-cols-2 gap-8">
@@ -103,6 +74,13 @@ export default async function DashboardPage() {
                     🤖 Generate AI Workout
                   </Link>
                   <Link
+                    href="/history"
+                    className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-white/5 border border-white/10 text-slate-300 font-semibold rounded-lg hover:bg-white/10 hover:border-purple-500/50 transition-all"
+                  >
+                    <History className="w-4 h-4" />
+                    View History & Export
+                  </Link>
+                  <Link
                     href="/profile/setup"
                     className="block w-full px-4 py-3 bg-white/5 border border-white/10 text-slate-300 font-semibold rounded-lg hover:bg-white/10 hover:border-purple-500/50 transition-all text-center"
                   >
@@ -111,14 +89,11 @@ export default async function DashboardPage() {
                 </div>
               </GlassCard>
 
-              <GlassCard>
-                <h3 className="text-lg font-semibold text-white mb-3">Recent Activity</h3>
-                <div className="text-center py-8 text-slate-400">
-                  <Dumbbell className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">No workouts logged yet</p>
-                  <p className="text-xs mt-1">Complete your profile to get started!</p>
-                </div>
-              </GlassCard>
+              {/* Volume Chart */}
+              <VolumeChart />
+
+              {/* Improvements */}
+              <ImprovementsCard />
 
               <GlassCard>
                 <h3 className="text-lg font-semibold text-white mb-3">AI Coach Tip</h3>
