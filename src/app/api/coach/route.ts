@@ -22,7 +22,7 @@ import { z } from 'zod';
 
 const RequestSchema = z.object({
   workoutType: z.string().min(1, 'Workout type is required'),
-  timeAvailable: z.number().int().min(15).max(120).optional().default(60),
+  timeAvailable: z.number().int().min(30).max(90).optional().default(60),
   energyLevel: z.number().int().min(1).max(10).optional().default(7),
 });
 
