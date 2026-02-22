@@ -49,6 +49,7 @@ export interface UserProfile {
   trainingAge: number; // months of consistent training
   trainingGoals: string[];
   splitPreference: string; // 'PPL', 'Upper/Lower', 'Full Body', etc.
+  equipment?: Record<string, string[]>; // available equipment by muscle group
 }
 
 /**
