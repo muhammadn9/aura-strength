@@ -58,7 +58,7 @@ export async function getExercisePRs(
   }
 
   // Fetch ALL historical sets for this exercise from past workouts (not just ones marked is_pr)
-  // This gives us complete history for accurate comparison
+  // Filter by user and exercise name at the database level for performance
   const { data: historicalSets, error: histError } = await supabase
     .from('sets')
     .select(`
@@ -71,7 +71,9 @@ export async function getExercisePRs(
           date
         )
       )
-    `);
+    `)
+    .eq('exercise.workout.user_id', userId)
+    .ilike('exercise.name', exerciseName);
 
   if (histError) {
     console.error('Error fetching historical sets:', histError);

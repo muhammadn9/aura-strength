@@ -668,7 +668,7 @@ export function kgToLb(kg: number): number {
  * ```
  */
 export function lbToKg(lb: number): number {
-  return Math.round((lb / 2.20462) * 2) / 2; // Round to nearest 0.5 lbs equivalent
+  return Math.round((lb / 2.20462) * 2) / 2; // Round to nearest 0.5 kg
 }
 
 /**
