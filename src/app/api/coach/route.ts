@@ -177,7 +177,7 @@ Give ONE short coaching note (max 15 words). Be specific and actionable. No gree
         const result = await generateText({
           model: google('gemini-1.5-flash'),
           prompt,
-          maxTokens: 50,
+          maxOutputTokens: 50,
         });
         return NextResponse.json({ note: result.text.trim() });
       } catch {
