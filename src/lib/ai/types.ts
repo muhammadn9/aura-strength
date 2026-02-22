@@ -45,7 +45,7 @@ export interface UserProfile {
   userId: string;
   age: number;
   weight: number; // in lbs
-  height: number; // in cm
+  height: number; // in inches
   trainingAge: number; // months of consistent training
   trainingGoals: string[];
   splitPreference: string; // 'PPL', 'Upper/Lower', 'Full Body', etc.
@@ -560,23 +560,18 @@ export function parseRepRange(repRange: string): { min: number; max: number } {
 }
 
 /**
- * Format weight for display with optional imperial units
+ * Format weight for display in lbs
  *
  * @param {number} weight - Weight in lbs
- * @param {boolean} [imperial=false] - Use imperial units (lb)
  * @returns {string} Formatted weight string
  *
  * @example
  * ```typescript
- * formatWeight(80, false); // '80kg'
- * formatWeight(80, true);  // '176lb'
+ * formatWeight(185); // '185 lbs'
+ * formatWeight(225); // '225 lbs'
  * ```
  */
-export function formatWeight(weight: number, imperial = false): string {
-  if (imperial) {
-    const lb = Math.round(weight * 2.20462);
-    return `${lb}lb`;
-  }
+export function formatWeight(weight: number): string {
   return `${weight} lbs`;
 }
 
@@ -647,9 +642,9 @@ export function isValidWorkoutData(data: unknown): data is AIWorkoutResponse {
 }
 
 /**
- * Convert kg to lb (imperial)
+ * Convert kg to lb (legacy conversion helper)
  *
- * @param {number} kg - Weight in pounds
+ * @param {number} kg - Weight in kilograms
  * @returns {number} Weight in pounds (rounded)
  *
  * @example
@@ -662,10 +657,10 @@ export function kgToLb(kg: number): number {
 }
 
 /**
- * Convert lb to kg (metric)
+ * Convert lb to kg (legacy conversion helper)
  *
  * @param {number} lb - Weight in pounds
- * @returns {number} Weight in pounds (rounded to 0.5)
+ * @returns {number} Weight in kilograms (rounded to nearest 0.5)
  *
  * @example
  * ```typescript
@@ -673,7 +668,7 @@ export function kgToLb(kg: number): number {
  * ```
  */
 export function lbToKg(lb: number): number {
-  return Math.round((lb / 2.20462) * 2) / 2; // Round to nearest 0.5kg
+  return Math.round((lb / 2.20462) * 2) / 2; // Round to nearest 0.5 lbs equivalent
 }
 
 /**
