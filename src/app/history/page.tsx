@@ -422,7 +422,7 @@ export default function HistoryPage() {
                             </div>
                             <div className="flex items-center gap-2 text-sm text-slate-400">
                               <TrendingUp className="w-4 h-4" />
-                              <span>{workout.totalVolume.toLocaleString()} kg</span>
+                              <span>{workout.totalVolume.toLocaleString()} lbs</span>
                             </div>
                           </div>
                         </div>

@@ -115,8 +115,8 @@ export default function WorkoutSummary({
   };
 
   return (
-    <div className="min-h-screen p-4 flex items-center justify-center">
-      <div className="w-full max-w-2xl">
+    <div className="fixed inset-0 overflow-y-auto p-4 pb-safe">
+      <div className="w-full max-w-2xl mx-auto my-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -183,7 +183,7 @@ export default function WorkoutSummary({
                 >
                   <Flame className="w-6 h-6 text-orange-400 mx-auto mb-2" />
                   <p className="text-2xl font-bold text-white">{stats.totalVolume.toLocaleString()}</p>
-                  <p className="text-sm text-slate-400">Total kg</p>
+                  <p className="text-sm text-slate-400">Total lbs</p>
                 </motion.div>
               </div>
 
@@ -215,7 +215,7 @@ export default function WorkoutSummary({
                           <span className="text-white font-medium">{pr.exerciseName}</span>
                         </div>
                         <div className="text-right">
-                          <p className="text-white font-bold">{pr.weight}kg × {pr.reps}</p>
+                          <p className="text-white font-bold">{pr.weight} lbs × {pr.reps}</p>
                           <p className="text-xs text-yellow-400 uppercase">{pr.prType} PR</p>
                         </div>
                       </motion.div>

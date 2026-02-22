@@ -25,15 +25,17 @@ export interface PRCheckResult {
 }
 
 /**
- * Fetch the user's PR history for a specific exercise
+ * Fetch the user's PR history for a specific exercise.
+ * Returns all historical sets for this exercise (both from all_time_prs and past workout sets).
  */
 export async function getExercisePRs(
   exerciseName: string,
   userId: string
 ): Promise<PRRecord[]> {
   const supabase = createClient();
+  const prs: PRRecord[] = [];
 
-  // First check all_time_prs table
+  // Check all_time_prs table
   const { data: archivedPRs, error: archivedError } = await supabase
     .from('all_time_prs')
     .select('exercise_name, weight, reps, date_achieved')
@@ -44,31 +46,6 @@ export async function getExercisePRs(
     console.error('Error fetching archived PRs:', archivedError);
   }
 
-  // Then check current sets for PRs not yet archived
-  const { data: currentSets, error: currentError } = await supabase
-    .from('sets')
-    .select(`
-      weight,
-      reps,
-      is_pr,
-      recorded_at,
-      exercise:exercises!inner (
-        name,
-        workout:workouts!inner (
-          user_id,
-          date
-        )
-      )
-    `)
-    .eq('is_pr', true);
-
-  if (currentError) {
-    console.error('Error fetching current PRs:', currentError);
-  }
-
-  const prs: PRRecord[] = [];
-
-  // Add archived PRs
   if (archivedPRs) {
     archivedPRs.forEach(pr => {
       prs.push({
@@ -80,19 +57,34 @@ export async function getExercisePRs(
     });
   }
 
-  // Add current PRs (filter by user and exercise name)
-  if (currentSets) {
-    // Normalize exercise name for comparison
+  // Fetch ALL historical sets for this exercise from past workouts (not just ones marked is_pr)
+  // This gives us complete history for accurate comparison
+  const { data: historicalSets, error: histError } = await supabase
+    .from('sets')
+    .select(`
+      weight,
+      reps,
+      exercise:exercises!inner (
+        name,
+        workout:workouts!inner (
+          user_id,
+          date
+        )
+      )
+    `);
+
+  if (histError) {
+    console.error('Error fetching historical sets:', histError);
+  }
+
+  if (historicalSets) {
     const normalizedExerciseName = exerciseName.trim().toLowerCase();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    currentSets.forEach((set: any) => {
-      // Handle nested relations which might be arrays from Supabase
+    historicalSets.forEach((set: any) => {
       const exercise = Array.isArray(set.exercise) ? set.exercise[0] : set.exercise;
       const workout = exercise?.workout;
       const workoutData = Array.isArray(workout) ? workout[0] : workout;
-
-      // Normalize the exercise name from the database for comparison
       const dbExerciseName = exercise?.name?.trim().toLowerCase();
 
       if (
@@ -113,20 +105,22 @@ export async function getExercisePRs(
 }
 
 /**
- * Check if a set is a PR compared to previous history
+ * Check if a set is a PR compared to previous history.
+ * Only flags a PR when the current set EXCEEDS historical bests.
+ * First-time exercises are NOT automatically PRs — user needs actual history.
  */
 export function checkForPR(
   weight: number,
   reps: number,
   previousPRs: PRRecord[]
 ): PRCheckResult {
+  // No history = no PR. Users need at least one past workout to earn a PR.
   if (previousPRs.length === 0) {
-    // First time doing this exercise - it's automatically a PR
     return {
-      isPR: true,
-      prType: 'weight',
+      isPR: false,
+      prType: null,
       previousBest: null,
-      improvement: 'First time! 🎉',
+      improvement: null,
     };
   }
 
@@ -146,9 +140,9 @@ export function checkForPR(
     .filter(pr => pr.weight === weight)
     .reduce((max, pr) => Math.max(max, pr.reps), 0);
 
-  // Check for weight PR (heaviest ever)
+  // Check for weight PR (heaviest ever) — must strictly exceed
   if (weight > bestWeight) {
-    const improvement = `+${(weight - bestWeight).toFixed(1)}kg heavier than your previous best!`;
+    const improvement = `+${(weight - bestWeight).toFixed(1)} lbs heavier than your previous best!`;
     return {
       isPR: true,
       prType: 'weight',
@@ -157,7 +151,7 @@ export function checkForPR(
     };
   }
 
-  // Check for volume PR (most total work)
+  // Check for volume PR (most total work) — must strictly exceed
   if (currentVolume > bestVolume) {
     const volumeIncrease = ((currentVolume - bestVolume) / bestVolume * 100).toFixed(0);
     const improvement = `+${volumeIncrease}% more volume than your previous best!`;
@@ -171,7 +165,7 @@ export function checkForPR(
 
   // Check for rep PR at this weight (if user has done this weight before)
   if (bestRepsAtWeight > 0 && reps > bestRepsAtWeight) {
-    const improvement = `+${reps - bestRepsAtWeight} more reps at ${weight}kg!`;
+    const improvement = `+${reps - bestRepsAtWeight} more reps at ${weight} lbs!`;
     return {
       isPR: true,
       prType: 'reps',
@@ -213,4 +207,3 @@ export function getPRTypeLabel(prType: 'weight' | 'volume' | 'reps'): string {
       return '🎉 NEW PR';
   }
 }
-

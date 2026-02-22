@@ -1,4 +1,4 @@
-# AuraStrength AI - Multi-Agent Workflow
+# Lightstack AI - Multi-Agent Workflow
 
 This document describes how to use the specialized agents for this project.
 

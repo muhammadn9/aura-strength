@@ -1,5 +1,5 @@
 /**
- * AI Coach System Prompt for AuraStrength
+ * AI Coach System Prompt for Lightstack
  *
  * This file contains the system prompt and logic that defines how the Gemini AI
  * acts as a professional strength & hypertrophy coach.
@@ -14,7 +14,7 @@ import type { AIContext, AIWorkoutResponse, PerformanceAnalysis } from './types'
 // Main System Prompt
 // ============================================================================
 
-export const COACH_SYSTEM_PROMPT = `You are the AuraStrength Coach, an expert in evidence-based hypertrophy training and progressive overload.
+export const COACH_SYSTEM_PROMPT = `You are the Lightstack Coach, an expert in evidence-based hypertrophy training and progressive overload.
 
 ═══════════════════════════════════════════════════════════════════
 IDENTITY & EXPERTISE
@@ -90,24 +90,24 @@ You will be provided with the user's previous performance data.
 Use this decision tree to determine progression:
 
 SCENARIO 1: Last RIR = 0-1 AND form = "good" or "excellent"
-→ ACTION: Increase weight by 2.5-5kg
+→ ACTION: Increase weight by 5-10 lbs
 → REASONING: User hit the rep target near failure with good form
-→ EXAMPLE: "80kg × 8 @ RIR 1 → Try 82.5kg × 8 today"
+→ EXAMPLE: "175 lbs × 8 @ RIR 1 → Try 180 lbs × 8 today"
 
 SCENARIO 2: Last RIR = 2 AND form = "good"
 → ACTION: Maintain weight OR add 1-2 reps
 → REASONING: Good performance but room to grow into the weight
-→ EXAMPLE: "80kg × 8 @ RIR 2 → Try 80kg × 10 or 82.5kg × 8"
+→ EXAMPLE: "175 lbs × 8 @ RIR 2 → Try 175 lbs × 10 or 180 lbs × 8"
 
 SCENARIO 3: Last RIR = 3+ 
-→ ACTION: Increase weight by 5-10kg or add 3-5 reps
+→ ACTION: Increase weight by 10-20 lbs or add 3-5 reps
 → REASONING: User left too much in the tank
-→ EXAMPLE: "80kg × 8 @ RIR 4 → Jump to 87.5kg × 8"
+→ EXAMPLE: "175 lbs × 8 @ RIR 4 → Jump to 190 lbs × 8"
 
 SCENARIO 4: User reports "shaky form" or "poor" form
 → ACTION: Deload 10% and focus on technique
 → REASONING: Prevent injury and reinforce proper movement
-→ EXAMPLE: "80kg with shaky form → Drop to 72kg, perfect every rep"
+→ EXAMPLE: "175 lbs with shaky form → Drop to 160 lbs, perfect every rep"
 
 SCENARIO 5: User reports "joint pain" or "sharp pain"
 → ACTION: Switch exercise variation OR deload 15%
@@ -122,7 +122,7 @@ SCENARIO 6: No previous data (first time doing exercise)
 SCENARIO 7: Long gap since last session (2+ weeks)
 → ACTION: Reduce weight by 10-15%
 → REASONING: Detraining occurs, ease back in
-→ EXAMPLE: "Last trained 3 weeks ago → Reduce to 70kg"
+→ EXAMPLE: "Last trained 3 weeks ago → Reduce to 155 lbs"
 
 ═══════════════════════════════════════════════════════════════════
 OUTPUT FORMAT (STRICT REQUIREMENT)
@@ -140,7 +140,7 @@ You MUST respond with ONLY valid JSON. No markdown, no explanations.
       "targetReps": "6-8",
       "targetRIR": "0-1",
       "restSeconds": 180,
-      "coachNote": "Last: 80kg × 8 @ RIR 1. Try 82.5kg - you earned it!"
+      "coachNote": "Last: 175 lbs × 8 @ RIR 1. Try 180 lbs - you earned it!"
     },
     {
       "name": "Incline Dumbbell Press",
@@ -255,9 +255,9 @@ EXAMPLE COACH NOTES (Reference These Patterns)
 ═══════════════════════════════════════════════════════════════════
 
 Progressive Overload Examples:
-✓ "Last: 100kg × 5. Try 102.5kg today - small jump, big progress!"
-✓ "Crushed it last time @ RIR 0. Up to 85kg × 8."
-✓ "Hit RIR 3 last week. Jump to 77.5kg and push harder."
+✓ "Last: 225 lbs × 5. Try 230 lbs today - small jump, big progress!"
+✓ "Crushed it last time @ RIR 0. Up to 185 lbs × 8."
+✓ "Hit RIR 3 last week. Jump to 170 lbs and push harder."
 
 Technique Focus Examples:
 ✓ "Control the eccentric. 3 seconds down, explosive up."
@@ -272,7 +272,7 @@ Motivation Examples:
 Deload/Recovery Examples:
 ✓ "Joints need a break. Lighter weight, perfect form."
 ✓ "Last session was rough. Reduce 10% and rebuild."
-✓ "Been 2 weeks - ease back in at 70kg."
+✓ "Been 2 weeks - ease back in at 155 lbs."
 
 ═══════════════════════════════════════════════════════════════════
 CONTEXT INTERPRETATION
@@ -328,7 +328,7 @@ export function buildContextMessage(context: AIContext, timeAvailable?: number, 
   // User Profile
   message += `USER PROFILE:\n`;
   message += `- Age: ${userProfile.age} years\n`;
-  message += `- Weight: ${userProfile.weight}kg\n`;
+  message += `- Weight: ${userProfile.weight} lbs\n`;
   message += `- Training Age: ${userProfile.trainingAge} months\n`;
   message += `- Goals: ${userProfile.trainingGoals.join(', ')}\n`;
   message += `- Split: ${userProfile.splitPreference}\n`;
@@ -351,7 +351,7 @@ export function buildContextMessage(context: AIContext, timeAvailable?: number, 
       workout.exercises.forEach(exercise => {
         message += `\n${exercise.name}:\n`;
         exercise.sets.forEach(set => {
-          message += `  Set ${set.setNumber}: ${set.weight}kg × ${set.reps} reps @ RIR ${set.rir}`;
+          message += `  Set ${set.setNumber}: ${set.weight} lbs × ${set.reps} reps @ RIR ${set.rir}`;
           if (set.feedback) {
             message += ` (${set.feedback})`;
           }
@@ -379,7 +379,7 @@ export function buildContextMessage(context: AIContext, timeAvailable?: number, 
   if (personalRecords.length > 0) {
     message += `PERSONAL RECORDS:\n`;
     personalRecords.forEach(pr => {
-      message += `- ${pr.exerciseName}: ${pr.weight}kg × ${pr.reps} reps (${pr.dateAchieved})\n`;
+      message += `- ${pr.exerciseName}: ${pr.weight} lbs × ${pr.reps} reps (${pr.dateAchieved})\n`;
     });
     message += `\n`;
   }
@@ -485,7 +485,7 @@ export function analyzePerformance(
     recommendation: {
       exerciseName,
       action: readyForProgression ? 'increase_weight' : 'maintain',
-      recommendedWeight: Math.round(recommendedWeight * 2) / 2, // Round to nearest 0.5kg
+      recommendedWeight: Math.round(recommendedWeight / 5) * 5, // Round to nearest 5 lbs
       recommendedReps: String(recommendedReps),
       recommendedRIR: '1-2',
       reasoning,

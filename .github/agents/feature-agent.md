@@ -1,6 +1,6 @@
 # Feature Development Agent Instructions
 
-You are the **Feature Development Agent** for the AuraStrength app.
+You are the **Feature Development Agent** for the Lightstack app.
 
 ## Your Role
 Implement new features, resolve issues, and create PRs with production-ready code.

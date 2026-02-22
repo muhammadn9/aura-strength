@@ -226,7 +226,7 @@ export default function PRCelebration({
             className="flex justify-center gap-6 mb-4"
           >
             <div className="text-center">
-              <p className="text-3xl font-bold text-white">{weight}<span className="text-lg text-purple-300">kg</span></p>
+              <p className="text-3xl font-bold text-white">{weight}<span className="text-lg text-purple-300"> lbs</span></p>
               <p className="text-sm text-slate-400">Weight</p>
             </div>
             <div className="text-center">
@@ -256,7 +256,7 @@ export default function PRCelebration({
               className="mt-4 p-3 bg-white/5 rounded-lg text-center"
             >
               <p className="text-sm text-slate-400">
-                Previous best: {prResult.previousBest.weight}kg × {prResult.previousBest.reps} reps
+                Previous best: {prResult.previousBest.weight} lbs × {prResult.previousBest.reps} reps
               </p>
             </motion.div>
           )}

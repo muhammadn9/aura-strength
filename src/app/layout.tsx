@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AuraStrength AI - Your Personal Strength Coach",
+  title: "Lightstack - Your Personal Strength Coach",
   description: "AI-powered workout tracking with intelligent progressive overload and visual muscle recovery heatmap",
 };
 

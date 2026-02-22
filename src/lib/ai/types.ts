@@ -5,7 +5,7 @@
  * These types ensure type safety across the entire application.
  *
  * @module ai/types
- * @author AuraStrength Team
+ * @author Lightstack Team
  * @version 0.5.0
  */
 
@@ -44,7 +44,7 @@
 export interface UserProfile {
   userId: string;
   age: number;
-  weight: number; // in kg
+  weight: number; // in lbs
   height: number; // in cm
   trainingAge: number; // months of consistent training
   trainingGoals: string[];
@@ -124,7 +124,7 @@ export interface PreviousExercise {
  */
 export interface PreviousSet {
   setNumber: number;
-  weight: number; // in kg
+  weight: number; // in lbs
   reps: number;
   rir: number; // Reps In Reserve (0-5)
   feedback?: string;
@@ -136,7 +136,7 @@ export interface PreviousSet {
  */
 export interface PersonalRecord {
   exerciseName: string;
-  weight: number; // in kg
+  weight: number; // in lbs
   reps: number;
   dateAchieved: string; // ISO date
 }
@@ -562,7 +562,7 @@ export function parseRepRange(repRange: string): { min: number; max: number } {
 /**
  * Format weight for display with optional imperial units
  *
- * @param {number} weight - Weight in kg
+ * @param {number} weight - Weight in lbs
  * @param {boolean} [imperial=false] - Use imperial units (lb)
  * @returns {string} Formatted weight string
  *
@@ -577,7 +577,7 @@ export function formatWeight(weight: number, imperial = false): string {
     const lb = Math.round(weight * 2.20462);
     return `${lb}lb`;
   }
-  return `${weight}kg`;
+  return `${weight} lbs`;
 }
 
 /**
@@ -649,7 +649,7 @@ export function isValidWorkoutData(data: unknown): data is AIWorkoutResponse {
 /**
  * Convert kg to lb (imperial)
  *
- * @param {number} kg - Weight in kilograms
+ * @param {number} kg - Weight in pounds
  * @returns {number} Weight in pounds (rounded)
  *
  * @example
@@ -665,7 +665,7 @@ export function kgToLb(kg: number): number {
  * Convert lb to kg (metric)
  *
  * @param {number} lb - Weight in pounds
- * @returns {number} Weight in kilograms (rounded to 0.5)
+ * @returns {number} Weight in pounds (rounded to 0.5)
  *
  * @example
  * ```typescript

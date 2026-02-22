@@ -19,9 +19,9 @@ const RIR_THRESHOLDS = {
 };
 
 const WEIGHT_INCREMENT = {
-  SMALL: 2.5, // kg or ~5 lb
-  MEDIUM: 5, // kg or ~10 lb
-  LARGE: 10, // kg or ~20 lb
+  SMALL: 5, // lbs
+  MEDIUM: 10, // lbs
+  LARGE: 20, // lbs
 };
 
 const REP_INCREMENT = {
@@ -117,7 +117,7 @@ function recommendWeightIncrease(
     recommendedWeight: newWeight,
     recommendedReps: targetReps,
     recommendedRIR: '1-2',
-    reasoning: `Strong performance (RIR ${lastPerformance.averageRIR}). Ready for weight increase of ${increment}kg.`,
+    reasoning: `Strong performance (RIR ${lastPerformance.averageRIR}). Ready for weight increase of ${increment} lbs.`,
     confidence: isConsistentlyStrong ? 'high' : 'medium',
     previousWeight: currentWeight,
     weightChange: increment,
