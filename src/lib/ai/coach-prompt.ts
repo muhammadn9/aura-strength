@@ -320,7 +320,7 @@ Now, generate the workout based on the context provided.`;
 /**
  * Build the user context message for the AI
  */
-export function buildContextMessage(context: AIContext, timeAvailable?: number, energyLevel?: number): string {
+export function buildContextMessage(context: AIContext, timeAvailable?: number, energyLevel?: number, coachNotes?: string): string {
   const { userProfile, lastTwoWorkouts, personalRecords, requestedWorkoutType } = context;
 
   let message = `WORKOUT REQUEST: ${requestedWorkoutType}\n\n`;
@@ -339,6 +339,22 @@ export function buildContextMessage(context: AIContext, timeAvailable?: number, 
     message += `- Energy Level: ${energyLevel}/10\n`;
   }
   message += `\n`;
+
+  // Equipment available
+  if (userProfile.equipment && Object.values(userProfile.equipment).some(arr => arr.length > 0)) {
+    message += `AVAILABLE EQUIPMENT:\n`;
+    for (const [group, items] of Object.entries(userProfile.equipment)) {
+      if (items.length > 0) {
+        message += `- ${group}: ${items.join(', ')}\n`;
+      }
+    }
+    message += `IMPORTANT: Only suggest exercises the user has equipment for.\n\n`;
+  }
+
+  // Coach notes from user (pre-workout input)
+  if (coachNotes && coachNotes.trim()) {
+    message += `USER NOTES FOR TODAY:\n"${coachNotes.trim()}"\nPlease factor these notes into the workout design.\n\n`;
+  }
 
   // Last 2 Workouts
   if (lastTwoWorkouts.length > 0) {

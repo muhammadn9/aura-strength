@@ -7,11 +7,15 @@ import AuraBackground from '@/components/aura/AuraBackground'
 import GlassCard from '@/components/aura/GlassCard'
 import { motion } from 'framer-motion'
 import { Loader2, User, Ruler, Weight, Calendar, Target, Dumbbell } from 'lucide-react'
+import { EquipmentSelector, type EquipmentByGroup } from '@/components/profile/EquipmentSelector'
+
+const EMPTY_EQUIPMENT: EquipmentByGroup = { chest: [], back: [], shoulders: [], arms: [], legs: [], core: [] }
 
 export default function ProfileSetupPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [equipment, setEquipment] = useState<EquipmentByGroup>(EMPTY_EQUIPMENT)
 
   const [formData, setFormData] = useState({
     age: '',
@@ -77,10 +81,11 @@ export default function ProfileSetupPage() {
           training_age: parseInt(formData.training_age),
           split_preference: formData.split_preference,
           training_goals: formData.training_goals,
+          equipment: equipment,
           unit_preference: 'imperial',
           updated_at: new Date().toISOString(),
         }, {
-          onConflict: 'user_id' // Update if user_id already exists
+          onConflict: 'user_id'
         })
 
       if (upsertError) {
@@ -257,6 +262,18 @@ export default function ProfileSetupPage() {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Equipment */}
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-3">
+                  <Dumbbell className="w-4 h-4" />
+                  Available Equipment
+                </label>
+                <p className="text-xs text-slate-500 mb-3">
+                  Your AI coach will only suggest exercises you have equipment for.
+                </p>
+                <EquipmentSelector value={equipment} onChange={setEquipment} />
               </div>
 
               {error && (

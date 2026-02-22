@@ -85,6 +85,8 @@ export default function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
           <input
             id="email"
             type="email"
+            inputMode="email"
+            autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -100,6 +102,7 @@ export default function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
           <input
             id="password"
             type="password"
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required

@@ -21,9 +21,19 @@ import { z } from 'zod';
 // ============================================================================
 
 const RequestSchema = z.object({
-  workoutType: z.string().min(1, 'Workout type is required'),
-  timeAvailable: z.number().int().min(30).max(90).optional().default(60),
+  workoutType: z.string().min(1, 'Workout type is required').optional(),
+  timeAvailable: z.number().int().min(15).max(180).optional().default(60),
   energyLevel: z.number().int().min(1).max(10).optional().default(7),
+  coachNotes: z.string().max(500).optional(),
+  mode: z.enum(['generate', 'set_note', 'regenerate']).optional().default('generate'),
+  // set_note mode fields
+  exerciseName: z.string().optional(),
+  loggedWeight: z.number().optional(),
+  loggedReps: z.number().optional(),
+  loggedRIR: z.string().optional(),
+  targetReps: z.string().optional(),
+  targetRIR: z.string().optional(),
+  feedback: z.string().optional(),
 });
 
 const ExerciseSchema = z.object({
@@ -146,7 +156,43 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { workoutType, timeAvailable, energyLevel } = validation.data;
+    const { workoutType, timeAvailable, energyLevel, coachNotes, mode,
+      exerciseName, loggedWeight, loggedReps, loggedRIR, targetReps, targetRIR, feedback } = validation.data;
+
+    // ── SET NOTE MODE ──────────────────────────────────────────────────────────
+    if (mode === 'set_note') {
+      if (!exerciseName || loggedWeight === undefined || loggedReps === undefined) {
+        return NextResponse.json({ note: '' });
+      }
+      try {
+        const { generateText } = await import('ai');
+        const prompt = `You are a concise strength coach. A user just logged a set.
+Exercise: ${exerciseName}
+Logged: ${loggedWeight} lbs × ${loggedReps} reps @ RIR ${loggedRIR}
+Target: ${targetReps} reps @ RIR ${targetRIR}
+Feedback: ${feedback || 'none'}
+
+Give ONE short coaching note (max 15 words). Be specific and actionable. No greeting.`;
+
+        const result = await generateText({
+          model: google('gemini-1.5-flash'),
+          prompt,
+          maxTokens: 50,
+        });
+        return NextResponse.json({ note: result.text.trim() });
+      } catch {
+        return NextResponse.json({ note: '' });
+      }
+    }
+
+    // ── WORKOUT GENERATION MODE ────────────────────────────────────────────────
+    if (!workoutType) {
+      return NextResponse.json(
+        { error: 'Bad Request', message: 'workoutType is required for workout generation' },
+        { status: 400 }
+      );
+    }
+
     console.log(`[API /coach] Generating workout: ${workoutType} (${timeAvailable}min, energy: ${energyLevel}/10)`);
 
     // 4. Build AI context (fetches user data from Supabase)
@@ -181,7 +227,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 5. Build prompt message
-    const userMessage = buildContextMessage(context, timeAvailable, energyLevel);
+    const userMessage = buildContextMessage(context, timeAvailable, energyLevel, coachNotes);
 
     // 6. Call Gemini AI
     console.log('[API /coach] Calling Gemini AI...');
