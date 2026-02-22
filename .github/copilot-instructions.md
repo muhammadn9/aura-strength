@@ -1,7 +1,7 @@
-# GitHub Copilot Instructions for AuraStrength
+# GitHub Copilot Instructions for Lightstack
 
 ## Project Overview
-AuraStrength is a workout tracking and AI-coaching web application built with:
+Lightstack is a workout tracking and AI-coaching web application built with:
 - **Framework:** Next.js 14+ (App Router)
 - **Styling:** Tailwind CSS + Framer Motion
 - **Database:** Supabase (PostgreSQL)

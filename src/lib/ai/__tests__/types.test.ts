@@ -69,14 +69,10 @@ describe('Utility Functions', () => {
   });
 
   describe('formatWeight', () => {
-    it('should format weight in kg by default', () => {
-      expect(formatWeight(80)).toBe('80kg');
-      expect(formatWeight(100)).toBe('100kg');
-    });
-
-    it('should format weight in lb when imperial is true', () => {
-      expect(formatWeight(80, true)).toBe('176lb');
-      expect(formatWeight(100, true)).toBe('220lb');
+    it('should format weight in lbs', () => {
+      expect(formatWeight(80)).toBe('80 lbs');
+      expect(formatWeight(100)).toBe('100 lbs');
+      expect(formatWeight(185)).toBe('185 lbs');
     });
   });
 

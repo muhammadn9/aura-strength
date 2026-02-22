@@ -83,7 +83,7 @@ export default function VolumeChart() {
                   >
                     {/* Tooltip */}
                     <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 rounded text-xs text-white opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none">
-                      {week.totalVolume.toLocaleString()} kg
+                      {week.totalVolume.toLocaleString()} lbs
                       <br />
                       {week.totalSets} sets
                     </div>
@@ -97,7 +97,7 @@ export default function VolumeChart() {
           {/* Summary */}
           <div className="flex justify-between text-sm text-slate-400 pt-2 border-t border-white/10">
             <span>
-              Total: {volumeData.reduce((sum, w) => sum + w.totalVolume, 0).toLocaleString()} kg
+              Total: {volumeData.reduce((sum, w) => sum + w.totalVolume, 0).toLocaleString()} lbs
             </span>
             <span>
               {volumeData.reduce((sum, w) => sum + w.workoutCount, 0)} workouts

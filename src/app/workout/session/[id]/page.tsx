@@ -48,6 +48,7 @@ export default function WorkoutSessionPage() {
   const {
     session,
     isLoading,
+    isHydrated,
     sessionPRs,
     getCurrentExercise,
     goToNextExercise,
@@ -107,15 +108,15 @@ export default function WorkoutSessionPage() {
     }
   }, [soundEnabled]);
 
-  // Redirect if no active session
+  // Redirect if no active session (only after hydration is complete)
   useEffect(() => {
-    if (!isLoading && !session) {
+    if (isHydrated && !isLoading && !session) {
       const timer = setTimeout(() => {
         router.push('/dashboard');
       }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [session, isLoading, router]);
+  }, [session, isLoading, isHydrated, router]);
 
   // Fetch PR history when exercise changes
   useEffect(() => {
@@ -202,6 +203,16 @@ export default function WorkoutSessionPage() {
 
     return parts.length > 0 ? parts.join(' ') : undefined;
   };
+
+  if (!isHydrated || (!session && isLoading)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <GlassCard>
+          <p className="text-white">Loading workout session...</p>
+        </GlassCard>
+      </div>
+    );
+  }
 
   if (!session) {
     return (
@@ -429,7 +440,7 @@ export default function WorkoutSessionPage() {
 
                     <div className="grid grid-cols-3 gap-4">
                       <div>
-                        <label className="block text-sm text-slate-400 mb-2">Weight (kg)</label>
+                        <label className="block text-sm text-slate-400 mb-2">Weight (lbs)</label>
                         <input
                           type="number"
                           value={weight}
@@ -609,7 +620,7 @@ export default function WorkoutSessionPage() {
                               )}
                             </div>
                             <div className="flex gap-4 text-white">
-                              <span>{set.weight}kg</span>
+                              <span>{set.weight} lbs</span>
                               <span>{set.reps} reps</span>
                               <span className="text-purple-400">{set.rir} RIR</span>
                             </div>
@@ -710,7 +721,7 @@ export default function WorkoutSessionPage() {
 
         {/* Workout Summary Modal */}
         {showSummary && (
-          <div className="fixed inset-0 z-50">
+          <div className="fixed inset-0 z-50 overflow-y-auto">
             <AuraBackground />
             <WorkoutSummary
               session={session}

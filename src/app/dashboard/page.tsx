@@ -98,7 +98,7 @@ export default async function DashboardPage() {
               <GlassCard>
                 <h3 className="text-lg font-semibold text-white mb-3">AI Coach Tip</h3>
                 <p className="text-sm text-slate-300">
-                  &quot;Welcome to AuraStrength! Complete your profile so I can design a personalized training program for you. I&apos;ll learn from every session to maximize your gains.&quot;
+                  &quot;Welcome to Lightstack! Complete your profile so I can design a personalized training program for you. I&apos;ll learn from every session to maximize your gains.&quot;
                 </p>
                 <p className="text-xs text-purple-400 mt-2">- Your AI Strength Coach</p>
               </GlassCard>

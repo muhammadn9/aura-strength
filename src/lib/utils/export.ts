@@ -213,8 +213,8 @@ export async function exportWorkoutsToCSV(
   // Generate filename with date range
   const today = new Date().toISOString().split('T')[0];
   const filename = startDate && endDate
-    ? `aura-strength-export-${startDate}-to-${endDate}.csv`
-    : `aura-strength-export-${today}.csv`;
+    ? `lightstack-export-${startDate}-to-${endDate}.csv`
+    : `lightstack-export-${today}.csv`;
 
   downloadCSV(csvContent, filename);
 

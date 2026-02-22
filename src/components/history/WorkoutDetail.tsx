@@ -136,7 +136,7 @@ export default function WorkoutDetail({ workout, onClose }: WorkoutDetailProps) 
                     >
                       <span className="text-slate-400 text-sm">Set {set.setNumber}</span>
                       <div className="flex items-center gap-3">
-                        <span className="text-white">{set.weight}kg</span>
+                        <span className="text-white">{set.weight} lbs</span>
                         <span className="text-slate-400">×</span>
                         <span className="text-white">{set.reps}</span>
                         <span className="text-purple-400 text-sm">@{set.rir} RIR</span>
@@ -165,7 +165,7 @@ export default function WorkoutDetail({ workout, onClose }: WorkoutDetailProps) 
           {/* Total Volume */}
           <div className="mt-4 pt-4 border-t border-white/10 text-center">
             <p className="text-slate-400 text-sm">Total Volume</p>
-            <p className="text-2xl font-bold text-white">{totalVolume.toLocaleString()} kg</p>
+            <p className="text-2xl font-bold text-white">{totalVolume.toLocaleString()} lbs</p>
           </div>
         </GlassCard>
       </motion.div>

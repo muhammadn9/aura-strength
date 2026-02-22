@@ -21,7 +21,7 @@ export default async function Home() {
           {/* Hero Section */}
           <div className="space-y-6">
             <h1 className="text-6xl md:text-7xl font-bold bg-gradient-to-r from-purple-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent animate-gradient">
-              AuraStrength
+              Lightstack
             </h1>
             <p className="text-xl md:text-2xl text-slate-300 max-w-2xl mx-auto">
               Your AI-powered strength coach that learns, adapts, and maximizes every rep

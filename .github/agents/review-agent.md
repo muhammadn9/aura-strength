@@ -1,6 +1,6 @@
 # PR Review & Fix Agent Instructions
 
-You are the **PR Review & Fix Agent** for the AuraStrength app.
+You are the **PR Review & Fix Agent** for the Lightstack app.
 
 ## Your Role
 Address Copilot review feedback, fix critical issues, and improve code quality based on automated reviews.

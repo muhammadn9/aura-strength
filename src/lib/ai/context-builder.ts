@@ -430,7 +430,7 @@ export function getContextSummary(context: AIContext): string {
   return `
 AI Context Summary:
   Workout Type: ${requestedWorkoutType}
-  User: ${userProfile.age}y, ${userProfile.weight}kg, ${userProfile.trainingAge} months training
+  User: ${userProfile.age}y, ${userProfile.weight} lbs, ${userProfile.trainingAge} months training
   Goals: ${userProfile.trainingGoals.join(', ')}
   Previous Workouts: ${lastTwoWorkouts.length}
   Personal Records: ${personalRecords.length}

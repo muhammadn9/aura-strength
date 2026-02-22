@@ -28,6 +28,7 @@ export interface SessionPR {
 interface WorkoutSessionContextType {
   session: WorkoutSession | null;
   isLoading: boolean;
+  isHydrated: boolean;
   error: string | null;
   sessionPRs: SessionPR[];
 
@@ -55,6 +56,7 @@ const WorkoutSessionContext = createContext<WorkoutSessionContextType | undefine
 export function WorkoutSessionProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<WorkoutSession | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionPRs, setSessionPRs] = useState<SessionPR[]>([]);
   const router = useRouter();
@@ -82,6 +84,7 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
         if (Date.now() - savedAt > MAX_SESSION_AGE_MS) {
           console.warn('Discarding stale workout session (older than 4 hours)');
           localStorage.removeItem('activeWorkoutSession');
+          setIsHydrated(true);
           return;
         }
 
@@ -100,6 +103,7 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
         localStorage.removeItem('activeWorkoutSession');
       }
     }
+    setIsHydrated(true);
   }, []);
 
   // Auth state change listener & periodic token refresh during long workouts
@@ -399,6 +403,7 @@ export function WorkoutSessionProvider({ children }: { children: React.ReactNode
   const value: WorkoutSessionContextType = {
     session,
     isLoading,
+    isHydrated,
     error,
     sessionPRs,
     startSession,

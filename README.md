@@ -1,4 +1,4 @@
-# AuraStrength AI 💪
+# Lightstack 💪
 
 A high-performance workout tracking and AI-coaching web application built with Next.js, Supabase, and Google Gemini AI.
 

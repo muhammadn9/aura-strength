@@ -83,7 +83,7 @@ export default function ImprovementsCard() {
                 <div>
                   <p className="text-white font-medium">{improvement.exerciseName}</p>
                   <p className="text-xs text-slate-500">
-                    {improvement.firstWeight}kg → {improvement.currentWeight}kg
+                    {improvement.firstWeight} lbs → {improvement.currentWeight} lbs
                   </p>
                 </div>
               </div>

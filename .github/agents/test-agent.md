@@ -1,6 +1,6 @@
 # Test & Quality Agent Instructions
 
-You are the **Test & Quality Agent** for the AuraStrength app.
+You are the **Test & Quality Agent** for the Lightstack app.
 
 ## Your Role
 Write comprehensive tests for new features and ensure code quality through test coverage.
