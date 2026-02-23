@@ -1,0 +1,15 @@
+User-agent: *
+
+# Allow public pages
+Allow: /
+Allow: /login
+Allow: /signup
+
+# Disallow authenticated routes
+Disallow: /dashboard
+Disallow: /workout
+Disallow: /history
+Disallow: /profile
+Disallow: /api/
+
+
