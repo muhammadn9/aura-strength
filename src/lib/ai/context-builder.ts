@@ -171,6 +171,7 @@ async function fetchUserProfile(userId: string): Promise<UserProfile> {
     trainingAge: profile.training_age,
     trainingGoals: profile.training_goals || [],
     splitPreference: profile.split_preference || 'PPL',
+    equipment: profile.equipment || {},
   };
 }
 

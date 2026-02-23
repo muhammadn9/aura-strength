@@ -11,12 +11,13 @@ CREATE TABLE IF NOT EXISTS profiles (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE NOT NULL,
   age INTEGER,
-  height DECIMAL(5,2),  -- in cm
-  weight DECIMAL(5,2),  -- in kg
+  height DECIMAL(5,2),  -- in inches (imperial only)
+  weight DECIMAL(5,2),  -- in lbs (imperial only)
   training_age INTEGER, -- months of training
   training_goals TEXT[],
   split_preference TEXT, -- e.g., 'PPL', 'Upper/Lower'
-  unit_preference TEXT DEFAULT 'metric', -- 'metric' or 'imperial'
+  unit_preference TEXT DEFAULT 'imperial', -- always 'imperial'
+  equipment JSONB DEFAULT '{"chest":[],"back":[],"shoulders":[],"arms":[],"legs":[],"core":[]}'::jsonb,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -314,11 +315,17 @@ WHERE w.date >= CURRENT_DATE - INTERVAL '7 days'
 GROUP BY w.user_id, mg.id, mg.name;
 
 -- =====================================================
+-- MIGRATION: Add equipment column (run if upgrading)
+-- =====================================================
+ALTER TABLE profiles
+  ADD COLUMN IF NOT EXISTS equipment JSONB DEFAULT '{"chest":[],"back":[],"shoulders":[],"arms":[],"legs":[],"core":[]}'::jsonb;
+
+-- =====================================================
 -- SUCCESS MESSAGE
 -- =====================================================
 DO $$
 BEGIN
-  RAISE NOTICE 'AuraStrength database schema created successfully!';
+  RAISE NOTICE 'Lightstack database schema created successfully!';
   RAISE NOTICE 'Next steps:';
   RAISE NOTICE '1. Enable OAuth providers (Google, Apple) in Supabase Authentication settings';
   RAISE NOTICE '2. Configure redirect URLs for your application';
