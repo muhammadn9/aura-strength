@@ -177,7 +177,18 @@ export default function WorkoutSessionPage() {
       } catch {
         if (!cancelled) setExercisePRHistory([]);
       }
-      if (!cancelled) setAiNote(null);
+      // Reset inputs for new exercise — pre-fill RIR from target
+      if (!cancelled) {
+        setAiNote(null);
+        setWeight('');
+        setReps('');
+        const defaultRIR = currentExercise?.targetRIR
+          ? currentExercise.targetRIR.split('-')[0].trim()
+          : '';
+        setRir(defaultRIR);
+        setSelectedTags([]);
+        setFeedbackNote('');
+      }
     };
     fetchPRHistory();
     return () => { cancelled = true; };
@@ -306,10 +317,13 @@ export default function WorkoutSessionPage() {
         }
       });
 
-      // Clear inputs
+      // Clear inputs — pre-fill RIR with target to avoid confusion
+      const targetRIRDefault = currentExercise?.targetRIR
+        ? currentExercise.targetRIR.split('-')[0].trim()
+        : '';
       setWeight('');
       setReps('');
-      setRir('');
+      setRir(targetRIRDefault);
       setSelectedTags([]);
       setFeedbackNote('');
 

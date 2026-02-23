@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import AuraBackground from '@/components/aura/AuraBackground'
@@ -16,6 +16,21 @@ export default function ProfileSetupPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [equipment, setEquipment] = useState<EquipmentByGroup>(EMPTY_EQUIPMENT)
+  const [authChecked, setAuthChecked] = useState(false)
+
+  // Auth guard: redirect unauthenticated users on page load
+  useEffect(() => {
+    const checkAuth = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        router.replace('/login')
+        return
+      }
+      setAuthChecked(true)
+    }
+    checkAuth()
+  }, [router])
 
   const [formData, setFormData] = useState({
     age: '',
@@ -100,6 +115,18 @@ export default function ProfileSetupPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Show nothing until auth check completes (middleware handles redirect)
+  if (!authChecked) {
+    return (
+      <>
+        <AuraBackground />
+        <div className="min-h-screen flex items-center justify-center">
+          <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
+        </div>
+      </>
+    )
   }
 
   return (

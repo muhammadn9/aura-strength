@@ -118,7 +118,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`[API /coach] Request from user: ${user.id}`);
+    const userId = user.id;
+    const safeUserId = process.env.NODE_ENV === 'production'
+      ? `${userId.slice(0, 8)}...`
+      : userId;
+    console.log(`[API /coach] Request from user: ${safeUserId}`);
 
     // 2. Parse and validate request body
     const body = await request.json();
@@ -166,9 +170,9 @@ Give ONE short coaching note (max 15 words). Be specific and actionable. No gree
     }
 
     // 3. Check rate limit (workout generation only — not set_note)
-    const rateLimit = checkRateLimit(user.id);
+    const rateLimit = checkRateLimit(userId);
     if (!rateLimit.allowed) {
-      console.warn(`[API /coach] Rate limit exceeded for user: ${user.id}`);
+      console.warn(`[API /coach] Rate limit exceeded for user: ${safeUserId}`);
       return NextResponse.json(
         {
           error: 'Too Many Requests',
@@ -198,7 +202,7 @@ Give ONE short coaching note (max 15 words). Be specific and actionable. No gree
     // 4. Build AI context (fetches user data from Supabase)
     let context;
     try {
-      context = await buildAIContext(user.id, workoutType);
+      context = await buildAIContext(userId, workoutType);
       console.log(
         `[API /coach] Context built successfully:`,
         `User: ${context.userProfile.userId}`,
@@ -209,7 +213,7 @@ Give ONE short coaching note (max 15 words). Be specific and actionable. No gree
     } catch (error) {
       console.error('[API /coach] Error building context:', error);
       console.error('[API /coach] Error details:', {
-        userId: user.id,
+        userId: safeUserId,
         workoutType,
         errorMessage: error instanceof Error ? error.message : String(error),
         errorStack: error instanceof Error ? error.stack : undefined,
@@ -231,7 +235,6 @@ Give ONE short coaching note (max 15 words). Be specific and actionable. No gree
 
     // 6. Call Gemini AI
     console.log('[API /coach] Calling Gemini AI...');
-    console.log('[API /coach] Using API key:', process.env.GOOGLE_GENERATIVE_AI_API_KEY ? 'SET (length: ' + process.env.GOOGLE_GENERATIVE_AI_API_KEY.length + ')' : 'NOT SET');
 
     let result;
     try {
@@ -246,12 +249,16 @@ Give ONE short coaching note (max 15 words). Be specific and actionable. No gree
 
       console.log('[API /coach] AI generation complete');
     } catch (error: unknown) {
-      console.error('[API /coach] Gemini API error:', error);
-      console.error('[API /coach] Error type:', error?.constructor?.name);
-      console.error('[API /coach] Error details:', JSON.stringify(error, null, 2));
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      // Only log full details in development to avoid leaking internals
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('[API /coach] Gemini API error:', error);
+        console.error('[API /coach] Error type:', error instanceof Error ? error.constructor.name : typeof error);
+      } else {
+        console.error('[API /coach] Gemini API error:', errorMessage.slice(0, 200));
+      }
 
       // Handle specific API errors
-      const errorMessage = error instanceof Error ? error.message : String(error);
 
       if (errorMessage.includes('API key')) {
         return NextResponse.json(
