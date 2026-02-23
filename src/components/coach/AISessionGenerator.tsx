@@ -100,7 +100,14 @@ export function AISessionGenerator() {
       completedSets: [],
       order: idx,
     }));
-    await startSession(effectiveWorkoutType, sessionExercises);
+    try {
+      setError(null);
+      await startSession(effectiveWorkoutType, sessionExercises);
+    } catch (err) {
+      console.error('Failed to start workout session', err);
+      setError('Failed to start workout. Please try again.');
+      setState('error');
+    }
   };
 
   const handleReset = () => {

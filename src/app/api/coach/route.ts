@@ -25,7 +25,7 @@ const RequestSchema = z.object({
   timeAvailable: z.number().int().min(15).max(180).optional().default(60),
   energyLevel: z.number().int().min(1).max(10).optional().default(7),
   coachNotes: z.string().max(500).optional(),
-  mode: z.enum(['generate', 'set_note', 'regenerate']).optional().default('generate'),
+  mode: z.enum(['generate', 'set_note']).optional().default('generate'),
   // set_note mode fields
   exerciseName: z.string().optional(),
   loggedWeight: z.number().optional(),
@@ -120,27 +120,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`[API /coach] Request from user: ${user.id}`);
 
-    // 2. Check rate limit
-    const rateLimit = checkRateLimit(user.id);
-    if (!rateLimit.allowed) {
-      console.warn(`[API /coach] Rate limit exceeded for user: ${user.id}`);
-      return NextResponse.json(
-        {
-          error: 'Too Many Requests',
-          message: 'Please wait a minute before generating another workout',
-        },
-        {
-          status: 429,
-          headers: {
-            'X-RateLimit-Limit': RATE_LIMIT_MAX.toString(),
-            'X-RateLimit-Remaining': '0',
-            'X-RateLimit-Reset': Date.now().toString(),
-          },
-        }
-      );
-    }
-
-    // 3. Parse and validate request body
+    // 2. Parse and validate request body
     const body = await request.json();
     const validation = RequestSchema.safeParse(body);
 
@@ -159,7 +139,7 @@ export async function POST(request: NextRequest) {
     const { workoutType, timeAvailable, energyLevel, coachNotes, mode,
       exerciseName, loggedWeight, loggedReps, loggedRIR, targetReps, targetRIR, feedback } = validation.data;
 
-    // ── SET NOTE MODE ──────────────────────────────────────────────────────────
+    // ── SET NOTE MODE — bypass rate limit (called after every set) ────────────
     if (mode === 'set_note') {
       if (!exerciseName || loggedWeight === undefined || loggedReps === undefined) {
         return NextResponse.json({ note: '' });
@@ -183,6 +163,26 @@ Give ONE short coaching note (max 15 words). Be specific and actionable. No gree
       } catch {
         return NextResponse.json({ note: '' });
       }
+    }
+
+    // 3. Check rate limit (workout generation only — not set_note)
+    const rateLimit = checkRateLimit(user.id);
+    if (!rateLimit.allowed) {
+      console.warn(`[API /coach] Rate limit exceeded for user: ${user.id}`);
+      return NextResponse.json(
+        {
+          error: 'Too Many Requests',
+          message: 'Please wait a minute before generating another workout',
+        },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': RATE_LIMIT_MAX.toString(),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': Date.now().toString(),
+          },
+        }
+      );
     }
 
     // ── WORKOUT GENERATION MODE ────────────────────────────────────────────────

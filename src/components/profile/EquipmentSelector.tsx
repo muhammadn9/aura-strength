@@ -190,6 +190,7 @@ export function EquipmentSelector({ value, onChange }: Props) {
             <button
               type="button"
               onClick={() => toggleGroup(group)}
+              aria-expanded={isOpen}
               className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/5 transition"
             >
               <div className="flex items-center gap-2">
@@ -233,6 +234,8 @@ export function EquipmentSelector({ value, onChange }: Props) {
                           <button
                             key={opt.id}
                             type="button"
+                            role="checkbox"
+                            aria-checked={checked}
                             onClick={() => toggleItem(group, opt.id)}
                             className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition-all ${
                               checked

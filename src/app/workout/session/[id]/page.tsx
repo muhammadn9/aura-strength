@@ -1,5 +1,4 @@
 'use client'
-/* eslint-disable react-hooks/set-state-in-effect */
 
 /**
  * Active Workout Session Page — Mobile-First Redesign
@@ -65,6 +64,7 @@ async function getAISetNote(
   targetReps: string,
   targetRIR: string,
   feedback: string | undefined,
+  signal?: AbortSignal,
 ): Promise<string> {
   try {
     const res = await fetch('/api/coach', {
@@ -80,6 +80,7 @@ async function getAISetNote(
         targetRIR,
         feedback,
       }),
+      signal,
     });
     if (!res.ok) return '';
     const data = await res.json();
@@ -133,6 +134,7 @@ export default function WorkoutSessionPage() {
 
   const currentExercise = getCurrentExercise();
   const weightInputRef = useRef<HTMLInputElement>(null);
+  const aiNoteAbortRef = useRef<AbortController | null>(null);
 
   // Play beep sound using Web Audio API
   const playBeep = useCallback(() => {
@@ -288,14 +290,20 @@ export default function WorkoutSessionPage() {
         }]);
       }
 
-      // Get AI note for this set (non-blocking)
+      // Get AI note for this set (non-blocking, cancellable)
+      aiNoteAbortRef.current?.abort();
+      const controller = new AbortController();
+      aiNoteAbortRef.current = controller;
       setAiNoteLoading(true);
       getAISetNote(
         currentExercise.name, weightNum, repsNum, rir,
         currentExercise.targetReps, currentExercise.targetRIR, feedback,
+        controller.signal,
       ).then(note => {
-        setAiNote(note || null);
-        setAiNoteLoading(false);
+        if (!controller.signal.aborted) {
+          setAiNote(note || null);
+          setAiNoteLoading(false);
+        }
       });
 
       // Clear inputs
@@ -386,7 +394,9 @@ export default function WorkoutSessionPage() {
             <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-lg flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
               <p className="text-red-300 text-sm flex-1">{actionError}</p>
-              <button onClick={() => setActionError(null)}><X className="w-4 h-4 text-red-400" /></button>
+              <button type="button" aria-label="Dismiss error" onClick={() => setActionError(null)}>
+                <X className="w-4 h-4 text-red-400" />
+              </button>
             </div>
           )}
 
