@@ -182,9 +182,7 @@ export default function WorkoutSessionPage() {
         setAiNote(null);
         setWeight('');
         setReps('');
-        const defaultRIR = currentExercise?.targetRIR
-          ? currentExercise.targetRIR.split('-')[0].trim()
-          : '';
+        const defaultRIR = currentExercise?.targetRIR?.split?.('-')?.[0]?.trim() || '';
         setRir(defaultRIR);
         setSelectedTags([]);
         setFeedbackNote('');
@@ -318,9 +316,8 @@ export default function WorkoutSessionPage() {
       });
 
       // Clear inputs — pre-fill RIR with target to avoid confusion
-      const targetRIRDefault = currentExercise?.targetRIR
-        ? currentExercise.targetRIR.split('-')[0].trim()
-        : '';
+      const targetRIRDefault =
+        currentExercise?.targetRIR?.split?.('-')?.[0]?.trim() || '';
       setWeight('');
       setReps('');
       setRir(targetRIRDefault);

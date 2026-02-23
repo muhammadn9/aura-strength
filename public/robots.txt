@@ -12,5 +12,4 @@ Disallow: /history
 Disallow: /profile
 Disallow: /api/
 
-Sitemap: https://aura-strength.vercel.app/sitemap.xml
 
