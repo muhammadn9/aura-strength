@@ -5,10 +5,32 @@
 
 ---
 
+## 🗂️ GitHub Project Board
+
+**Board URL:** https://github.com/users/muhammadn9/projects/1
+**Repo:** `muhammadn9/aura-strength`
+
+The project board is the **single source of truth** for all work. At the start of every session:
+1. Check the board for open issues
+2. Check for `in-progress` labelled issues (work already started)
+3. Confirm with user which issue(s) to tackle if multiple are open
+
+### Board Column → Label Mapping
+Since the GitHub MCP manages labels natively, labels are used to track board state:
+
+| Board Column | Issue Label | Meaning |
+|---|---|---|
+| 📋 Todo | *(no special label, just open)* | Not yet started |
+| 🔄 In Progress | `in-progress` | Branch exists, actively being worked |
+| 👀 In Review | `in-review` | PR open, awaiting Copilot + Vercel review |
+| ✅ Done | Closed | Merged and issue closed |
+
+---
+
 ## 🔁 The Golden Loop — Every Session Starts Here
 
 ```
-CHECK OPEN ISSUES → BRANCH → IMPLEMENT → PR → REVIEW LOOP → MERGE → CLOSE ISSUE
+CHECK PROJECT BOARD → PICK ISSUE(S) → BRANCH → IMPLEMENT → PR → REVIEW LOOP → MERGE → CLOSE ISSUE
 ```
 
 ---
@@ -24,20 +46,22 @@ CHECK OPEN ISSUES → BRANCH → IMPLEMENT → PR → REVIEW LOOP → MERGE → 
 
 When starting a session:
 
-1. **Query GitHub Projects / Issues for open items** via GitHub MCP
-   - List open issues on `muhammadn9/aura-strength`
-   - Identify the issue(s) to address (confirm with user if ambiguous)
+1. **Check the project board** — list open issues on `muhammadn9/aura-strength` via GitHub MCP
+   - Look for issues already labelled `in-progress` first (resume those)
+   - Otherwise pick from open issues and confirm with user if multiple exist
 
-2. **Create a branch** scoped to the issue(s):
+2. **Mark the issue as In Progress** — add `in-progress` label via GitHub MCP before touching any code
+
+3. **Create a branch** scoped to the issue(s):
    - Naming: `feat/<issue-number>-short-description` or `fix/<issue-number>-short-description`
    - Example: `feat/63-distributed-rate-limiter`
    - Multiple issues in one branch: `feat/63-64-rate-limiter-and-ux`
 
-3. **Implement the solution**, checking off every task in the issue body including:
-   - All required items
+4. **Implement the solution**, checking off every task in the issue body including:
+   - All required/medium-priority items
    - All "Nice-to-Have" / low-priority items listed in the issue
 
-4. **Before opening a PR**, self-verify against the issue checklist:
+5. **Before opening a PR**, self-verify against the issue checklist:
    - Re-read the issue body
    - Confirm every checkbox item is addressed
 
@@ -51,6 +75,7 @@ When starting a session:
   - `Closes #<issue-number>` (auto-closes issue on merge)
   - Summary of changes
   - Checklist mirroring the issue tasks, all checked
+- After creating the PR: swap label from `in-progress` → `in-review` via GitHub MCP
 
 ---
 
@@ -94,18 +119,20 @@ If the user describes new work that doesn't have an existing issue:
    - Title: concise and descriptive
    - Body: problem statement, acceptance criteria, nice-to-haves
    - Labels: `enhancement` or `bug` as appropriate
-2. **Then follow RULE 2** (branch → implement → PR)
+2. The new issue automatically appears on the project board at: https://github.com/users/muhammadn9/projects/1
+3. **Then follow RULE 2** (label → branch → implement → PR)
 
 ---
 
 ## RULE 6 — Issue Lifecycle Tracking
 
-| Stage | Action |
-|-------|--------|
-| Starting work | Add `in-progress` label to issue via GitHub MCP |
-| PR opened | Issue body should be linked in PR (`Closes #N`) |
+| Stage | GitHub MCP Action |
+|-------|-------------------|
+| Starting work | Add `in-progress` label to issue |
+| PR opened | Add `in-review` label; remove `in-progress` |
 | PR merged | Issue auto-closes (via `Closes #N` in PR body) |
 | If not auto-closed | Manually close issue via `issue_write` with `state: closed` |
+| After close | Board card moves to Done automatically |
 
 ---
 
@@ -142,26 +169,30 @@ Before calling `merge_pull_request`:
 - [ ] Vercel deployment check is green
 - [ ] No new TypeScript/ESLint errors introduced
 - [ ] PR body contains `Closes #<issue-number>`
+- [ ] Issue label updated to `in-review` (will auto-close on merge)
 
 ---
 
-## Workflow Summary (Quick Reference)
+## Session Start Checklist
+
+At the beginning of every work session, run through this sequence via GitHub MCP:
 
 ```
-1.  List open issues (GitHub MCP)
-2.  Pick issue(s) to address
-3.  Create branch: feat/<issue>-<desc>
-4.  Implement all tasks + nice-to-haves from issue
-5.  Self-verify against issue checklist
-6.  Create PR (GitHub MCP) with "Closes #N"
-7.  Request Copilot review (GitHub MCP)
-8.  Wait 5–10 min → check Vercel + Copilot review
-9.  Address ALL review comments → push fixes
-10. Re-request Copilot review (manually via GitHub MCP)
-11. Wait 5–10 min → repeat 8–10 until clean
-12. Squash merge (GitHub MCP)
-13. Delete branch
-14. Confirm issue closed (auto or manual)
+1. list_issues (state: OPEN) on muhammadn9/aura-strength
+2. Check for any `in-progress` labelled issues — resume those first
+3. Confirm with user which issue(s) to work on
+4. Add `in-progress` label to chosen issue(s)
+5. Create branch: feat/<issue>-<desc>
+6. Implement — address ALL checklist items incl. nice-to-haves
+7. Self-verify against issue body before opening PR
+8. Create PR with "Closes #N" — swap label to `in-review`
+9. Request Copilot review
+10. Wait 5–10 min → poll get_status + get_review_comments
+11. Address ALL comments → push fixes
+12. Re-request Copilot review (manually)
+13. Repeat 10–12 until Copilot clean + Vercel green
+14. Squash merge → delete branch
+15. Confirm issue closed on board: https://github.com/users/muhammadn9/projects/1
 ```
 
 ---
