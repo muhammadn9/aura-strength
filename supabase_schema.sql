@@ -342,43 +342,51 @@ CREATE POLICY "Service role manages rate limits"
   USING (auth.role() = 'service_role')
   WITH CHECK (auth.role() = 'service_role');
 
--- Atomic rate limit check-and-increment function with advisory lock
-CREATE OR REPLACE FUNCTION check_rate_limit(
-  p_user_id UUID,
-  p_window_start TIMESTAMPTZ,
-  p_max_requests INTEGER
-)
+-- Atomic rate limit check-and-increment function with advisory lock.
+-- Uses auth.uid() internally so callers cannot impersonate another user.
+-- Window (1 min) and max requests (10) are hardcoded to prevent bypass.
+CREATE OR REPLACE FUNCTION check_rate_limit()
 RETURNS JSON
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
+  v_user_id UUID;
   v_count INTEGER;
   v_allowed BOOLEAN;
   v_lock_key BIGINT;
   v_oldest TIMESTAMPTZ;
+  v_window INTERVAL := INTERVAL '1 minute';
+  v_max INTEGER := 10;
 BEGIN
-  -- Use advisory lock keyed on the user ID to prevent race conditions
-  v_lock_key := ('x' || left(replace(p_user_id::text, '-', ''), 15))::bit(64)::bigint;
+  -- Derive user from auth context — never trust caller-supplied IDs
+  v_user_id := auth.uid();
+  IF v_user_id IS NULL THEN
+    RETURN json_build_object('allowed', FALSE, 'request_count', 0, 'oldest_request_at', NULL);
+  END IF;
+
+  -- Advisory lock keyed on the user ID to prevent race conditions
+  v_lock_key := ('x' || left(replace(v_user_id::text, '-', ''), 15))::bit(64)::bigint;
   PERFORM pg_advisory_xact_lock(v_lock_key);
 
   -- Clean up old entries outside the window
   DELETE FROM rate_limits
-  WHERE user_id = p_user_id
-    AND requested_at < p_window_start;
+  WHERE user_id = v_user_id
+    AND endpoint = 'coach'
+    AND requested_at < NOW() - v_window;
 
   -- Count requests and find oldest in the current window
   SELECT COUNT(*), MIN(requested_at) INTO v_count, v_oldest
   FROM rate_limits
-  WHERE user_id = p_user_id
-    AND requested_at >= p_window_start;
+  WHERE user_id = v_user_id
+    AND endpoint = 'coach'
+    AND requested_at >= NOW() - v_window;
 
-  IF v_count >= p_max_requests THEN
+  IF v_count >= v_max THEN
     v_allowed := FALSE;
   ELSE
-    -- Insert new request record
     INSERT INTO rate_limits (user_id, endpoint, requested_at)
-    VALUES (p_user_id, 'coach', NOW());
+    VALUES (v_user_id, 'coach', NOW());
     v_count := v_count + 1;
     IF v_oldest IS NULL THEN
       v_oldest := NOW();

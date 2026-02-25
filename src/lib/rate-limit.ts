@@ -32,14 +32,10 @@ export async function checkRateLimit(userId: string): Promise<RateLimitResult> {
   try {
     const supabase = await createClient();
     const now = Date.now();
-    const windowStart = now - RATE_LIMIT_WINDOW_MS;
 
-    // Use Supabase RPC for atomic check-and-increment
-    const { data, error } = await supabase.rpc('check_rate_limit', {
-      p_user_id: userId,
-      p_window_start: new Date(windowStart).toISOString(),
-      p_max_requests: RATE_LIMIT_MAX,
-    });
+    // The RPC uses auth.uid() internally — no caller-supplied params needed.
+    // userId is kept in the signature for logging/fallback only.
+    const { data, error } = await supabase.rpc('check_rate_limit');
 
     if (error) {
       console.warn('[Rate Limit] Supabase RPC error, falling back to allow:', error.message);

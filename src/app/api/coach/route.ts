@@ -140,7 +140,7 @@ Give ONE short coaching note (max 15 words). Be specific and actionable. No gree
           headers: {
             'X-RateLimit-Limit': RATE_LIMIT_MAX.toString(),
             'X-RateLimit-Remaining': '0',
-            'X-RateLimit-Reset': Date.now().toString(),
+            'X-RateLimit-Reset': rateLimit.resetAt.toString(),
           },
         }
       );
