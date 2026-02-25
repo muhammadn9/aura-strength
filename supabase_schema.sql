@@ -356,6 +356,7 @@ DECLARE
   v_count INTEGER;
   v_allowed BOOLEAN;
   v_lock_key BIGINT;
+  v_oldest TIMESTAMPTZ;
 BEGIN
   -- Use advisory lock keyed on the user ID to prevent race conditions
   v_lock_key := ('x' || left(replace(p_user_id::text, '-', ''), 15))::bit(64)::bigint;
@@ -366,8 +367,8 @@ BEGIN
   WHERE user_id = p_user_id
     AND requested_at < p_window_start;
 
-  -- Count requests in the current window
-  SELECT COUNT(*) INTO v_count
+  -- Count requests and find oldest in the current window
+  SELECT COUNT(*), MIN(requested_at) INTO v_count, v_oldest
   FROM rate_limits
   WHERE user_id = p_user_id
     AND requested_at >= p_window_start;
@@ -379,12 +380,16 @@ BEGIN
     INSERT INTO rate_limits (user_id, endpoint, requested_at)
     VALUES (p_user_id, 'coach', NOW());
     v_count := v_count + 1;
+    IF v_oldest IS NULL THEN
+      v_oldest := NOW();
+    END IF;
     v_allowed := TRUE;
   END IF;
 
   RETURN json_build_object(
     'allowed', v_allowed,
-    'request_count', v_count
+    'request_count', v_count,
+    'oldest_request_at', v_oldest
   );
 END;
 $$;

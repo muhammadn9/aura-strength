@@ -46,16 +46,24 @@ export async function checkRateLimit(userId: string): Promise<RateLimitResult> {
       return { allowed: true, remaining: RATE_LIMIT_MAX - 1, resetAt: now + RATE_LIMIT_WINDOW_MS };
     }
 
-    const result = data as { allowed: boolean; request_count: number } | null;
+    const result = data as { allowed: boolean; request_count: number; oldest_request_at?: string } | null;
     if (!result) {
       return { allowed: true, remaining: RATE_LIMIT_MAX - 1, resetAt: now + RATE_LIMIT_WINDOW_MS };
+    }
+
+    // Compute accurate resetAt based on when the oldest request in the window expires
+    let resetAt = now + RATE_LIMIT_WINDOW_MS;
+    if (result.oldest_request_at) {
+      const oldestTime = new Date(result.oldest_request_at).getTime();
+      if (!Number.isNaN(oldestTime)) {
+        resetAt = oldestTime + RATE_LIMIT_WINDOW_MS;
+      }
     }
 
     return {
       allowed: result.allowed,
       remaining: Math.max(0, RATE_LIMIT_MAX - result.request_count),
-      // Sliding window: oldest request expires within RATE_LIMIT_WINDOW_MS from now
-      resetAt: now + RATE_LIMIT_WINDOW_MS,
+      resetAt,
     };
   } catch (err) {
     // Fail open — don't block users if rate limit infra is down
