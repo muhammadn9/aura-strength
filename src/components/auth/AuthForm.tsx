@@ -2,8 +2,9 @@
 
 import { createClient } from '@/lib/supabase/client'
 import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Loader2 } from 'lucide-react'
+import PasswordStrength from './PasswordStrength'
 
 export default function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
   const [email, setEmail] = useState('')
@@ -102,7 +103,7 @@ export default function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
           <input
             id="password"
             type="password"
-            autoComplete="current-password"
+            autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -110,6 +111,9 @@ export default function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
             className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
             placeholder="••••••••"
           />
+          <AnimatePresence>
+            {mode === 'signup' && password && <PasswordStrength password={password} />}
+          </AnimatePresence>
         </div>
 
         {message && (

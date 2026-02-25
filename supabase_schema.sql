@@ -321,6 +321,70 @@ ALTER TABLE profiles
   ADD COLUMN IF NOT EXISTS equipment JSONB DEFAULT '{"chest":[],"back":[],"shoulders":[],"arms":[],"legs":[],"core":[]}'::jsonb;
 
 -- =====================================================
+-- RATE LIMITS TABLE (Distributed rate limiting - refs #63)
+-- =====================================================
+CREATE TABLE IF NOT EXISTS rate_limits (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  endpoint TEXT NOT NULL DEFAULT 'coach',
+  requested_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_rate_limits_user_endpoint
+  ON rate_limits(user_id, endpoint, requested_at);
+
+-- Enable RLS
+ALTER TABLE rate_limits ENABLE ROW LEVEL SECURITY;
+
+-- Service role only — no direct user access needed
+CREATE POLICY "Service role manages rate limits"
+  ON rate_limits FOR ALL
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+-- Atomic rate limit check-and-increment function
+CREATE OR REPLACE FUNCTION check_rate_limit(
+  p_user_id UUID,
+  p_window_start TIMESTAMPTZ,
+  p_max_requests INTEGER
+)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_count INTEGER;
+  v_allowed BOOLEAN;
+BEGIN
+  -- Clean up old entries outside the window
+  DELETE FROM rate_limits
+  WHERE user_id = p_user_id
+    AND requested_at < p_window_start;
+
+  -- Count requests in the current window
+  SELECT COUNT(*) INTO v_count
+  FROM rate_limits
+  WHERE user_id = p_user_id
+    AND requested_at >= p_window_start;
+
+  IF v_count >= p_max_requests THEN
+    v_allowed := FALSE;
+  ELSE
+    -- Insert new request record
+    INSERT INTO rate_limits (user_id, endpoint, requested_at)
+    VALUES (p_user_id, 'coach', NOW());
+    v_count := v_count + 1;
+    v_allowed := TRUE;
+  END IF;
+
+  RETURN json_build_object(
+    'allowed', v_allowed,
+    'request_count', v_count
+  );
+END;
+$$;
+
+-- =====================================================
 -- SUCCESS MESSAGE
 -- =====================================================
 DO $$

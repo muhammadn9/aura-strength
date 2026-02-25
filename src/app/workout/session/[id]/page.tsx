@@ -157,8 +157,6 @@ export default function WorkoutSessionPage() {
   // Redirect if no active session (only after hydration)
   useEffect(() => {
     if (isHydrated && !isLoading && !session) {
-      // router.push does not trigger a setState cascade — safe to call in setTimeout
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       const timer = setTimeout(() => router.push('/dashboard'), 2000);
       return () => clearTimeout(timer);
     }
@@ -283,7 +281,7 @@ export default function WorkoutSessionPage() {
       await logSet(session.currentExerciseIndex, {
         weight: weightNum,
         reps: repsNum,
-        rir: typeof rir === 'string' && rir.includes('-') ? parseInt(rir.split('-')[0]) : parseInt(rir),
+        rir: rir.includes('-') ? parseInt(rir.split('-')[0]) : parseInt(rir),
         completed: true,
         feedback,
         isPR: prResult.isPR,
@@ -558,7 +556,8 @@ export default function WorkoutSessionPage() {
                         value={rir}
                         onChange={(e) => setRir(e.target.value)}
                         className="w-full px-3 py-3 bg-white/5 border border-white/10 rounded-lg text-white text-center text-lg font-bold focus:outline-none focus:border-purple-500"
-                        placeholder="2"
+                        placeholder="0-5"
+                        aria-label="Reps in reserve"
                       />
                     </div>
                   </div>

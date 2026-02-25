@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import AuthForm from '@/components/auth/AuthForm'
-import { motion } from 'framer-motion'
 
 export default function LoginPage() {
   return (
@@ -16,15 +15,25 @@ export default function LoginPage() {
 
       <AuthForm mode="login" />
 
-      <p className="text-center text-sm text-slate-400">
-        Don't have an account?{' '}
-        <Link
-          href="/signup"
-          className="text-purple-400 hover:text-purple-300 font-medium transition-colors"
-        >
-          Sign up
-        </Link>
-      </p>
+      <div className="text-center space-y-2">
+        <p className="text-sm text-slate-400">
+          <Link
+            href="/forgot-password"
+            className="text-purple-400 hover:text-purple-300 font-medium transition-colors"
+          >
+            Forgot your password?
+          </Link>
+        </p>
+        <p className="text-sm text-slate-400">
+          Don&apos;t have an account?{' '}
+          <Link
+            href="/signup"
+            className="text-purple-400 hover:text-purple-300 font-medium transition-colors"
+          >
+            Sign up
+          </Link>
+        </p>
+      </div>
     </div>
   )
 }

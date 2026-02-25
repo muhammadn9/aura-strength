@@ -419,9 +419,21 @@ export function AISessionGenerator() {
                 <h3 className="text-xl font-bold text-white">Generation Failed</h3>
                 <p className="text-sm text-slate-400">{error || 'Something went wrong'}</p>
               </div>
-              <button onClick={handleReset}
-                className="px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition text-sm"
-              >Try Again</button>
+              <div className="flex gap-3">
+                {effectiveWorkoutType && (
+                  <button
+                    onClick={() => handleGenerate()}
+                    className="px-6 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-semibold hover:from-purple-600 hover:to-indigo-600 transition text-sm flex items-center gap-2"
+                    aria-label="Retry AI generation"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    Try Again
+                  </button>
+                )}
+                <button onClick={handleReset}
+                  className="px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition text-sm"
+                >Start Over</button>
+              </div>
             </motion.div>
           )}
 
