@@ -1,5 +1,16 @@
 # GitHub Copilot Instructions for Lightstack
 
+> ⚠️ **MANDATORY**: Before writing any code, read `.github/AI_AGENT_RULES.md`.
+> All work **must** flow through GitHub Issues → Branch → PR → Review Loop → Merge.
+> All GitHub operations use the **GitHub MCP server** (never raw CLI for GitHub actions).
+
+## 🔁 Workflow at a Glance
+1. **Existing issue?** → List open issues via GitHub MCP → branch → implement → PR → review loop → merge
+2. **New work mentioned?** → Create the issue via GitHub MCP first → then follow step 1
+3. **PR review loop**: request Copilot review → wait 5–10 min → address ALL comments → re-request → repeat until clean + Vercel green → squash merge
+
+---
+
 ## Project Overview
 Lightstack is a workout tracking and AI-coaching web application built with:
 - **Framework:** Next.js 14+ (App Router)
@@ -40,11 +51,15 @@ This project uses specialized agents. See `.github/agents/README.md` for details
 - `@architect` - Architecture review
 
 ## PR Rules
-1. Never push directly to main
-2. Always create PRs for changes
-3. Wait for Copilot review before merging
-4. Address critical review feedback
-5. Ensure Vercel deployment succeeds
+> Full rules in `.github/AI_AGENT_RULES.md` — the summary below is non-exhaustive.
+
+1. **Never push directly to main** — branch always required
+2. **Issues first** — every change traces to a GitHub issue (create one if missing)
+3. **PR via GitHub MCP** — title `feat: summary (closes #N)`, body must contain `Closes #N`
+4. **Copilot review loop** — request review → wait 5–10 min → address ALL comments → re-request → repeat
+5. **Vercel must be green** — never merge a failing deployment
+6. **Squash merge only** — delete branch after merge
+7. **Confirm issue closed** — auto via `Closes #N` or manually via GitHub MCP
 
 ## Database Schema
 See `supabase_schema.sql` for table definitions:
@@ -53,4 +68,3 @@ See `supabase_schema.sql` for table definitions:
 - `exercises` - Exercises within workouts
 - `sets` - Individual sets with weight/reps/RIR
 - `all_time_prs` - Personal records archive
-
