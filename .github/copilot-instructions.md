@@ -5,9 +5,18 @@
 > All GitHub operations use the **GitHub MCP server** (never raw CLI for GitHub actions).
 
 ## 🔁 Workflow at a Glance
-1. **Existing issue?** → List open issues via GitHub MCP → branch → implement → PR → review loop → merge
+1. **Existing issue?** → Check project board → list open issues via GitHub MCP → label `in-progress` → branch → implement → PR → review loop → merge
 2. **New work mentioned?** → Create the issue via GitHub MCP first → then follow step 1
 3. **PR review loop**: request Copilot review → wait 5–10 min → address ALL comments → re-request → repeat until clean + Vercel green → squash merge
+
+## 📌 Project Board
+**URL:** https://github.com/users/muhammadn9/projects/1
+
+Labels drive board state. Required labels (create once in repo settings if missing):
+| Label | Color | Meaning |
+|-------|-------|--------|
+| `in-progress` | `#fbca04` (yellow) | Work started, branch exists |
+| `in-review` | `#0075ca` (blue) | PR open, under review |
 
 ---
 
@@ -55,11 +64,12 @@ This project uses specialized agents. See `.github/agents/README.md` for details
 
 1. **Never push directly to main** — branch always required
 2. **Issues first** — every change traces to a GitHub issue (create one if missing)
-3. **PR via GitHub MCP** — title `feat: summary (closes #N)`, body must contain `Closes #N`
-4. **Copilot review loop** — request review → wait 5–10 min → address ALL comments → re-request → repeat
-5. **Vercel must be green** — never merge a failing deployment
-6. **Squash merge only** — delete branch after merge
-7. **Confirm issue closed** — auto via `Closes #N` or manually via GitHub MCP
+3. **Label lifecycle** — `in-progress` when starting → `in-review` when PR opens → closed on merge
+4. **PR via GitHub MCP** — title `feat: summary (closes #N)`, body must contain `Closes #N`
+5. **Copilot review loop** — request review → wait 5–10 min → address ALL comments → re-request → repeat
+6. **Vercel must be green** — never merge a failing deployment
+7. **Squash merge only** — delete branch after merge
+8. **Confirm issue closed** — auto via `Closes #N` or manually via GitHub MCP
 
 ## Database Schema
 See `supabase_schema.sql` for table definitions:
