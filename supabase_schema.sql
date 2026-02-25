@@ -336,13 +336,13 @@ CREATE INDEX IF NOT EXISTS idx_rate_limits_user_endpoint
 -- Enable RLS
 ALTER TABLE rate_limits ENABLE ROW LEVEL SECURITY;
 
--- Service role only — no direct user access needed
+-- Only service role can access rate_limits (the check_rate_limit RPC is SECURITY DEFINER)
 CREATE POLICY "Service role manages rate limits"
   ON rate_limits FOR ALL
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+  USING (auth.role() = 'service_role')
+  WITH CHECK (auth.role() = 'service_role');
 
--- Atomic rate limit check-and-increment function
+-- Atomic rate limit check-and-increment function with advisory lock
 CREATE OR REPLACE FUNCTION check_rate_limit(
   p_user_id UUID,
   p_window_start TIMESTAMPTZ,
@@ -355,7 +355,12 @@ AS $$
 DECLARE
   v_count INTEGER;
   v_allowed BOOLEAN;
+  v_lock_key BIGINT;
 BEGIN
+  -- Use advisory lock keyed on the user ID to prevent race conditions
+  v_lock_key := ('x' || left(replace(p_user_id::text, '-', ''), 15))::bit(64)::bigint;
+  PERFORM pg_advisory_xact_lock(v_lock_key);
+
   -- Clean up old entries outside the window
   DELETE FROM rate_limits
   WHERE user_id = p_user_id

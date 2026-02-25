@@ -1,8 +1,11 @@
 /**
  * Distributed Rate Limiter using Supabase
  *
- * Uses a `rate_limits` table with atomic upsert operations
+ * Uses a `rate_limits` table enforced via a Supabase RPC function
  * to provide rate limiting that works across serverless invocations.
+ *
+ * The underlying SQL implementation uses advisory locks to prevent
+ * race conditions between concurrent requests.
  *
  * Replaces the in-memory Map-based rate limiter (refs #63).
  */
@@ -51,6 +54,7 @@ export async function checkRateLimit(userId: string): Promise<RateLimitResult> {
     return {
       allowed: result.allowed,
       remaining: Math.max(0, RATE_LIMIT_MAX - result.request_count),
+      // Sliding window: oldest request expires within RATE_LIMIT_WINDOW_MS from now
       resetAt: now + RATE_LIMIT_WINDOW_MS,
     };
   } catch (err) {
