@@ -69,6 +69,39 @@ const WORKOUT_TYPES = [
   'Shoulder Day',
 ];
 
+// Typed shapes for Supabase query results (avoids eslint-disable for @typescript-eslint/no-explicit-any)
+interface WorkoutListRow {
+  id: string;
+  date: string;
+  workout_type: string;
+  duration_minutes: number | null;
+  exercises: Array<{
+    id: string;
+    sets: Array<{ weight: number; reps: number }>;
+  }>;
+}
+
+interface WorkoutDetailRow {
+  id: string;
+  date: string;
+  workout_type: string;
+  duration_minutes: number | null;
+  user_overall_feedback: string | null;
+  exercises: Array<{
+    id: string;
+    name: string;
+    order_index: number;
+    sets: Array<{
+      set_number: number;
+      weight: number;
+      reps: number;
+      rir: number;
+      user_set_feedback: string | null;
+      is_pr: boolean;
+    }>;
+  }>;
+}
+
 export default function HistoryPage() {
   const router = useRouter();
 
@@ -117,8 +150,7 @@ export default function HistoryPage() {
         if (fetchError) throw fetchError;
 
         // Process workouts
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const processedWorkouts: WorkoutSummary[] = (data || []).map((w: any) => {
+        const processedWorkouts: WorkoutSummary[] = ((data || []) as WorkoutListRow[]).map((w) => {
           let setCount = 0;
           let totalVolume = 0;
 
@@ -184,27 +216,21 @@ export default function HistoryPage() {
       if (fetchError) throw fetchError;
 
       // Process data
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const typedData = data as unknown as WorkoutDetailRow;
       const detail: WorkoutDetailData = {
-        id: data.id,
-        date: data.date,
-        workoutType: data.workout_type,
-        durationMinutes: data.duration_minutes,
-        userFeedback: data.user_overall_feedback,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        exercises: (data.exercises || [])
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0))
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .map((ex: any) => ({
+        id: typedData.id,
+        date: typedData.date,
+        workoutType: typedData.workout_type,
+        durationMinutes: typedData.duration_minutes,
+        userFeedback: typedData.user_overall_feedback,
+        exercises: (typedData.exercises || [])
+          .sort((a, b) => (a.order_index || 0) - (b.order_index || 0))
+          .map((ex) => ({
             id: ex.id,
             name: ex.name,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             sets: (ex.sets || [])
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              .sort((a: any, b: any) => (a.set_number || 0) - (b.set_number || 0))
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              .map((set: any) => ({
+              .sort((a, b) => (a.set_number || 0) - (b.set_number || 0))
+              .map((set) => ({
                 setNumber: set.set_number,
                 weight: set.weight,
                 reps: set.reps,

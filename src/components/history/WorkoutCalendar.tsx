@@ -83,7 +83,13 @@ export default function WorkoutCalendar({ workoutsByDate, onSelectDate }: Workou
   };
 
   const goToNextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+    const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+    const now = new Date();
+    // Don't navigate past the current month
+    if (nextMonth.getFullYear() < now.getFullYear() ||
+      (nextMonth.getFullYear() === now.getFullYear() && nextMonth.getMonth() <= now.getMonth())) {
+      setCurrentDate(nextMonth);
+    }
   };
 
   const goToToday = () => {
@@ -92,6 +98,10 @@ export default function WorkoutCalendar({ workoutsByDate, onSelectDate }: Workou
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+
+  const isCurrentMonth =
+    currentDate.getFullYear() === today.getFullYear() &&
+    currentDate.getMonth() === today.getMonth();
 
   return (
     <div>
@@ -109,17 +119,20 @@ export default function WorkoutCalendar({ workoutsByDate, onSelectDate }: Workou
           <h3 className="text-white font-medium">
             {MONTHS[currentDate.getMonth()]} {currentDate.getFullYear()}
           </h3>
-          <button
-            onClick={goToToday}
-            className="px-2 py-1 text-xs bg-purple-500/20 text-purple-400 rounded hover:bg-purple-500/30 transition"
-          >
-            Today
-          </button>
+          {!isCurrentMonth && (
+            <button
+              onClick={goToToday}
+              className="px-2 py-1 text-xs bg-purple-500/20 text-purple-400 rounded hover:bg-purple-500/30 transition"
+            >
+              Today
+            </button>
+          )}
         </div>
 
         <button
           onClick={goToNextMonth}
-          className="p-2 bg-white/5 rounded-lg hover:bg-white/10 transition"
+          disabled={isCurrentMonth}
+          className="p-2 bg-white/5 rounded-lg hover:bg-white/10 transition disabled:opacity-30 disabled:cursor-not-allowed"
           aria-label="Next month"
         >
           <ChevronRight className="w-4 h-4 text-white" />

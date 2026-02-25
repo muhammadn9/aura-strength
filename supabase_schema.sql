@@ -321,6 +321,88 @@ ALTER TABLE profiles
   ADD COLUMN IF NOT EXISTS equipment JSONB DEFAULT '{"chest":[],"back":[],"shoulders":[],"arms":[],"legs":[],"core":[]}'::jsonb;
 
 -- =====================================================
+-- RATE LIMITS TABLE (Distributed rate limiting - refs #63)
+-- =====================================================
+CREATE TABLE IF NOT EXISTS rate_limits (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  endpoint TEXT NOT NULL DEFAULT 'coach',
+  requested_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_rate_limits_user_endpoint
+  ON rate_limits(user_id, endpoint, requested_at);
+
+-- Enable RLS
+ALTER TABLE rate_limits ENABLE ROW LEVEL SECURITY;
+
+-- Only service role can access rate_limits (the check_rate_limit RPC is SECURITY DEFINER)
+CREATE POLICY "Service role manages rate limits"
+  ON rate_limits FOR ALL
+  USING (auth.role() = 'service_role')
+  WITH CHECK (auth.role() = 'service_role');
+
+-- Atomic rate limit check-and-increment function with advisory lock.
+-- Uses auth.uid() internally so callers cannot impersonate another user.
+-- Window (1 min) and max requests (10) are hardcoded to prevent bypass.
+CREATE OR REPLACE FUNCTION check_rate_limit()
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_user_id UUID;
+  v_count INTEGER;
+  v_allowed BOOLEAN;
+  v_lock_key BIGINT;
+  v_oldest TIMESTAMPTZ;
+  v_window INTERVAL := INTERVAL '1 minute';
+  v_max INTEGER := 10;
+BEGIN
+  -- Derive user from auth context — never trust caller-supplied IDs
+  v_user_id := auth.uid();
+  IF v_user_id IS NULL THEN
+    RETURN json_build_object('allowed', FALSE, 'request_count', 0, 'oldest_request_at', NULL);
+  END IF;
+
+  -- Advisory lock keyed on the user ID to prevent race conditions
+  v_lock_key := ('x' || left(replace(v_user_id::text, '-', ''), 15))::bit(64)::bigint;
+  PERFORM pg_advisory_xact_lock(v_lock_key);
+
+  -- Clean up old entries outside the window
+  DELETE FROM rate_limits
+  WHERE user_id = v_user_id
+    AND endpoint = 'coach'
+    AND requested_at < NOW() - v_window;
+
+  -- Count requests and find oldest in the current window
+  SELECT COUNT(*), MIN(requested_at) INTO v_count, v_oldest
+  FROM rate_limits
+  WHERE user_id = v_user_id
+    AND endpoint = 'coach'
+    AND requested_at >= NOW() - v_window;
+
+  IF v_count >= v_max THEN
+    v_allowed := FALSE;
+  ELSE
+    INSERT INTO rate_limits (user_id, endpoint, requested_at)
+    VALUES (v_user_id, 'coach', NOW());
+    v_count := v_count + 1;
+    IF v_oldest IS NULL THEN
+      v_oldest := NOW();
+    END IF;
+    v_allowed := TRUE;
+  END IF;
+
+  RETURN json_build_object(
+    'allowed', v_allowed,
+    'request_count', v_count,
+    'oldest_request_at', v_oldest
+  );
+END;
+$$;
+
+-- =====================================================
 -- SUCCESS MESSAGE
 -- =====================================================
 DO $$

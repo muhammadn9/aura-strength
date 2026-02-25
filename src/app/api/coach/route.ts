@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase/server';
 import { buildAIContext } from '@/lib/ai/context-builder';
 import { COACH_SYSTEM_PROMPT, buildContextMessage } from '@/lib/ai/coach-prompt';
 import { validateAIResponse } from '@/lib/ai/coach-prompt';
+import { checkRateLimit, RATE_LIMIT_MAX } from '@/lib/rate-limit';
 import { google } from '@ai-sdk/google';
 import { generateObject } from 'ai';
 import { NextRequest, NextResponse } from 'next/server';
@@ -53,47 +54,6 @@ const WorkoutResponseSchema = z.object({
   estimatedDuration: z.number().int().optional(),
 });
 
-// ============================================================================
-// Rate Limiting (Simple in-memory)
-// ============================================================================
-
-interface RateLimitEntry {
-  count: number;
-  resetAt: number;
-}
-
-const rateLimitMap = new Map<string, RateLimitEntry>();
-const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
-const RATE_LIMIT_MAX = 10; // 10 requests per minute
-
-function checkRateLimit(userId: string): { allowed: boolean; remaining: number } {
-  const now = Date.now();
-  const entry = rateLimitMap.get(userId);
-
-  // Clean up expired entries
-  if (entry && now > entry.resetAt) {
-    rateLimitMap.delete(userId);
-  }
-
-  const current = rateLimitMap.get(userId);
-
-  if (!current) {
-    // First request
-    rateLimitMap.set(userId, {
-      count: 1,
-      resetAt: now + RATE_LIMIT_WINDOW,
-    });
-    return { allowed: true, remaining: RATE_LIMIT_MAX - 1 };
-  }
-
-  if (current.count >= RATE_LIMIT_MAX) {
-    return { allowed: false, remaining: 0 };
-  }
-
-  // Increment count
-  current.count++;
-  return { allowed: true, remaining: RATE_LIMIT_MAX - current.count };
-}
 
 // ============================================================================
 // Main API Handler
@@ -119,10 +79,7 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = user.id;
-    const safeUserId = process.env.NODE_ENV === 'production'
-      ? `${userId.slice(0, 8)}...`
-      : userId;
-    console.log(`[API /coach] Request from user: ${safeUserId}`);
+    console.log(`[API /coach] Request received`);
 
     // 2. Parse and validate request body
     const body = await request.json();
@@ -170,9 +127,9 @@ Give ONE short coaching note (max 15 words). Be specific and actionable. No gree
     }
 
     // 3. Check rate limit (workout generation only — not set_note)
-    const rateLimit = checkRateLimit(userId);
+    const rateLimit = await checkRateLimit(userId);
     if (!rateLimit.allowed) {
-      console.warn(`[API /coach] Rate limit exceeded for user: ${safeUserId}`);
+      console.warn(`[API /coach] Rate limit exceeded`);
       return NextResponse.json(
         {
           error: 'Too Many Requests',
@@ -183,7 +140,7 @@ Give ONE short coaching note (max 15 words). Be specific and actionable. No gree
           headers: {
             'X-RateLimit-Limit': RATE_LIMIT_MAX.toString(),
             'X-RateLimit-Remaining': '0',
-            'X-RateLimit-Reset': Date.now().toString(),
+            'X-RateLimit-Reset': rateLimit.resetAt.toString(),
           },
         }
       );
@@ -205,19 +162,11 @@ Give ONE short coaching note (max 15 words). Be specific and actionable. No gree
       context = await buildAIContext(userId, workoutType);
       console.log(
         `[API /coach] Context built successfully:`,
-        `User: ${context.userProfile.userId}`,
-        `Age: ${context.userProfile.age}`,
         `Previous workouts: ${context.lastTwoWorkouts.length}`,
         `PRs: ${context.personalRecords.length}`
       );
     } catch (error) {
-      console.error('[API /coach] Error building context:', error);
-      console.error('[API /coach] Error details:', {
-        userId: safeUserId,
-        workoutType,
-        errorMessage: error instanceof Error ? error.message : String(error),
-        errorStack: error instanceof Error ? error.stack : undefined,
-      });
+      console.error('[API /coach] Error building context:', error instanceof Error ? error.message : String(error));
       return NextResponse.json(
         {
           error: 'Context Builder Failed',

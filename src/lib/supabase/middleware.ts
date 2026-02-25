@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { getEnv } from '@/lib/env'
 
 // Routes that require authentication
 const PROTECTED_ROUTES = ['/dashboard', '/workout', '/history', '/profile']
@@ -13,16 +14,15 @@ export async function updateSession(request: NextRequest) {
   })
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    getEnv('NEXT_PUBLIC_SUPABASE_URL'),
+    getEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
     {
       cookies: {
         getAll() {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          cookiesToSet.forEach(({ name, value, options: _o }) => request.cookies.set(name, value))
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({
             request,
           })
