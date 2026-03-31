@@ -1,8 +1,15 @@
-import { type NextRequest } from 'next/server'
-import { updateSession } from './lib/supabase/middleware'
+import { type NextRequest, NextResponse } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  return await updateSession(request)
+  const { pathname } = request.nextUrl
+
+  // Allow the maintenance page itself to load
+  if (pathname === '/maintenance') {
+    return NextResponse.next()
+  }
+
+  // Redirect everything else to the maintenance page
+  return NextResponse.redirect(new URL('/maintenance', request.url))
 }
 
 export const config = {
