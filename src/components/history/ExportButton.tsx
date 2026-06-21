@@ -3,17 +3,17 @@
 /**
  * Export Button Component
  *
- * Provides workout data export and archive functionality.
+ * Provides workout data export as CSV.
+ * Archive/delete functionality removed per #72.
  */
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
-import { exportWorkoutsToCSV, archiveAndClearWorkouts } from '@/lib/utils/export';
+import { exportWorkoutsToCSV } from '@/lib/utils/export';
 import GlassCard from '@/components/aura/GlassCard';
 import {
   Download,
-  Archive,
   X,
   AlertTriangle,
   Check,
@@ -26,7 +26,6 @@ interface ExportButtonProps {
 export default function ExportButton({ workoutCount }: ExportButtonProps) {
   const [showModal, setShowModal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [isArchiving, setIsArchiving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const supabase = createClient();
@@ -54,47 +53,6 @@ export default function ExportButton({ workoutCount }: ExportButtonProps) {
       setMessage({ type: 'error', text: errorMessage });
     } finally {
       setIsExporting(false);
-    }
-  };
-
-  const handleArchiveAndClear = async () => {
-    if (!confirm('Are you sure? This will delete all workouts after archiving PRs.')) {
-      return;
-    }
-
-    setIsArchiving(true);
-    setMessage(null);
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      // First export - abort if export fails
-      const exportResult = await exportWorkoutsToCSV(user.id);
-      if (!exportResult.success) {
-        throw new Error(exportResult.error || 'Export failed; archive aborted');
-      }
-
-      // Then archive and clear
-      const result = await archiveAndClearWorkouts(user.id, true);
-
-      if (result.success) {
-        setMessage({
-          type: 'success',
-          text: 'Workouts archived and cleared. PRs preserved!',
-        });
-        // Refresh the page after a delay
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
-      } else {
-        throw new Error(result.error || 'Archive failed');
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Archive failed';
-      setMessage({ type: 'error', text: errorMessage });
-    } finally {
-      setIsArchiving(false);
     }
   };
 
@@ -143,13 +101,6 @@ export default function ExportButton({ workoutCount }: ExportButtonProps) {
                 <div className="mb-6 p-4 bg-white/5 rounded-lg text-center">
                   <p className="text-3xl font-bold text-white">{workoutCount}</p>
                   <p className="text-slate-400">workouts logged</p>
-
-                  {workoutCount >= 30 && (
-                    <div className="mt-3 flex items-center justify-center gap-2 text-yellow-400 text-sm">
-                      <AlertTriangle className="w-4 h-4" />
-                      <span>Consider exporting and starting fresh!</span>
-                    </div>
-                  )}
                 </div>
 
                 {/* Message */}
@@ -168,59 +119,32 @@ export default function ExportButton({ workoutCount }: ExportButtonProps) {
                   </div>
                 )}
 
-                {/* Actions */}
-                <div className="space-y-3">
-                  {/* Export Only */}
-                  <button
-                    onClick={handleExport}
-                    disabled={isExporting || isArchiving || workoutCount === 0}
-                    className="w-full py-3 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-medium rounded-lg hover:from-purple-600 hover:to-indigo-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    {isExporting ? (
-                      <>
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                          className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
-                        />
-                        Exporting...
-                      </>
-                    ) : (
-                      <>
-                        <Download className="w-5 h-5" />
-                        Download CSV
-                      </>
-                    )}
-                  </button>
+                {/* Export Action */}
+                <button
+                  onClick={handleExport}
+                  disabled={isExporting || workoutCount === 0}
+                  className="w-full py-3 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-medium rounded-lg hover:from-purple-600 hover:to-indigo-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isExporting ? (
+                    <>
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                        className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
+                      />
+                      Exporting...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-5 h-5" />
+                      Download CSV
+                    </>
+                  )}
+                </button>
 
-                  {/* Export & Archive */}
-                  <button
-                    onClick={handleArchiveAndClear}
-                    disabled={isExporting || isArchiving || workoutCount === 0}
-                    className="w-full py-3 bg-white/10 text-white font-medium rounded-lg hover:bg-white/20 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    {isArchiving ? (
-                      <>
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                          className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
-                        />
-                        Archiving...
-                      </>
-                    ) : (
-                      <>
-                        <Archive className="w-5 h-5" />
-                        Export & Clear for New Cycle
-                      </>
-                    )}
-                  </button>
-
-                  {/* Info */}
-                  <p className="text-xs text-slate-500 text-center mt-4">
-                    "Export & Clear" will download your data, archive your PRs, then clear your workout history to start fresh.
-                  </p>
-                </div>
+                <p className="text-xs text-slate-500 text-center mt-4">
+                  Exports all workout data including exercises, sets, and PRs as a CSV file.
+                </p>
               </GlassCard>
             </motion.div>
           </motion.div>

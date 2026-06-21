@@ -3,11 +3,10 @@ import { redirect } from 'next/navigation'
 import AuraBackground from '@/components/aura/AuraBackground'
 import GlassCard from '@/components/aura/GlassCard'
 import MuscleHeatmap from '@/components/aura/MuscleHeatmap'
-import CycleWarning from '@/components/dashboard/CycleWarning'
 import AnalyticsStatsCards from '@/components/dashboard/AnalyticsStatsCards'
 import ImprovementsCard from '@/components/dashboard/ImprovementsCard'
 import VolumeChart from '@/components/dashboard/VolumeChart'
-import { Dumbbell, TrendingUp, Calendar, LogOut, History, BarChart3 } from 'lucide-react'
+import { LogOut, History } from 'lucide-react'
 import Link from 'next/link'
 
 export default async function DashboardPage() {
@@ -45,8 +44,33 @@ export default async function DashboardPage() {
             </form>
           </div>
 
-          {/* 30-Workout Cycle Warning */}
-          <CycleWarning />
+          {/* Quick Start — First thing users see */}
+          <GlassCard>
+            <h2 className="text-xl font-bold text-white mb-4">Quick Start</h2>
+            <div className="space-y-3">
+              <Link
+                href="/workout/new"
+                className="block w-full px-6 py-4 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold rounded-xl hover:from-purple-600 hover:to-indigo-600 transition-all text-center shadow-lg shadow-purple-500/50 hover:shadow-xl hover:shadow-purple-500/50 hover:scale-105"
+              >
+                🤖 Generate AI Workout
+              </Link>
+              <div className="grid grid-cols-2 gap-3">
+                <Link
+                  href="/history"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-white/5 border border-white/10 text-slate-300 font-semibold rounded-lg hover:bg-white/10 hover:border-purple-500/50 transition-all text-sm"
+                >
+                  <History className="w-4 h-4" />
+                  History
+                </Link>
+                <Link
+                  href="/profile/setup"
+                  className="block w-full px-4 py-3 bg-white/5 border border-white/10 text-slate-300 font-semibold rounded-lg hover:bg-white/10 hover:border-purple-500/50 transition-all text-center text-sm"
+                >
+                  Update Profile
+                </Link>
+              </div>
+            </div>
+          </GlassCard>
 
           {/* Analytics Stats */}
           <AnalyticsStatsCards />
@@ -62,33 +86,8 @@ export default async function DashboardPage() {
               <MuscleHeatmap />
             </GlassCard>
 
-            {/* Quick Actions */}
+            {/* Charts & Tips */}
             <div className="space-y-4">
-              <GlassCard>
-                <h2 className="text-xl font-bold text-white mb-4">Quick Start</h2>
-                <div className="space-y-3">
-                  <Link
-                    href="/workout/new"
-                    className="block w-full px-6 py-4 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold rounded-xl hover:from-purple-600 hover:to-indigo-600 transition-all text-center shadow-lg shadow-purple-500/50 hover:shadow-xl hover:shadow-purple-500/50 hover:scale-105"
-                  >
-                    🤖 Generate AI Workout
-                  </Link>
-                  <Link
-                    href="/history"
-                    className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-white/5 border border-white/10 text-slate-300 font-semibold rounded-lg hover:bg-white/10 hover:border-purple-500/50 transition-all"
-                  >
-                    <History className="w-4 h-4" />
-                    View History & Export
-                  </Link>
-                  <Link
-                    href="/profile/setup"
-                    className="block w-full px-4 py-3 bg-white/5 border border-white/10 text-slate-300 font-semibold rounded-lg hover:bg-white/10 hover:border-purple-500/50 transition-all text-center"
-                  >
-                    Update Profile
-                  </Link>
-                </div>
-              </GlassCard>
-
               {/* Volume Chart */}
               <VolumeChart />
 

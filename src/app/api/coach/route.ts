@@ -171,9 +171,6 @@ Give ONE short coaching note (max 15 words). Be specific and actionable. No gree
         {
           error: 'Context Builder Failed',
           message: 'Failed to fetch your workout history. Please try again.',
-          details: process.env.NODE_ENV === 'development'
-            ? (error instanceof Error ? error.message : String(error))
-            : undefined,
         },
         { status: 500 }
       );
